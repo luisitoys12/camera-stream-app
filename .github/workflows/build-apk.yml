@@ -20,10 +20,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Bootstrap gradle-wrapper.jar
+        run: |
+          curl -fsSL \
+            "https://repo.maven.apache.org/maven2/org/gradle/gradle-wrapper/8.11.1/gradle-wrapper-8.11.1.jar" \
+            -o gradle/wrapper/gradle-wrapper.jar
+          chmod +x gradlew
+
+      - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
+          cache-read-only: false
 
       - uses: android-actions/setup-android@v3
 
@@ -50,20 +57,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Bootstrap gradle-wrapper.jar
+        run: |
+          curl -fsSL \
+            "https://repo.maven.apache.org/maven2/org/gradle/gradle-wrapper/8.11.1/gradle-wrapper-8.11.1.jar" \
+            -o gradle/wrapper/gradle-wrapper.jar
+          chmod +x gradlew
+
+      - uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: wrapper
+          cache-read-only: false
 
       - uses: android-actions/setup-android@v3
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
 
       - name: Download NodeMedia AAR
         run: |
@@ -138,7 +144,6 @@ jobs:
       - name: Generate QR code for APK download
         run: |
           pip install qrcode[pil] --quiet
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           python3 - <<'EOF'
           import qrcode, os, base64, io
           url = os.environ["RUN_URL"]
@@ -160,7 +165,6 @@ jobs:
           V="${{ steps.art.outputs.v }}"
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           QR_B64=$(cat /tmp/qr_b64.txt)
-
           echo "## ✅ CameraStream v${V}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📱 Escanea para descargar el APK" >> $GITHUB_STEP_SUMMARY
