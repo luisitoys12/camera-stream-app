@@ -12,11 +12,9 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      # ── 1. Checkout ──────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. JDK 17 ────────────────────────────────────────────────────────────
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -24,11 +22,9 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # ── 3. Android SDK ───────────────────────────────────────────────────────
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # ── 4. Gradle cache ──────────────────────────────────────────────────────
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -38,7 +34,6 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
 
-      # ── 5. Download cloudflared arm64 binary ─────────────────────────────────
       - name: Download cloudflared arm64
         run: |
           mkdir -p app/src/main/assets
@@ -46,38 +41,43 @@ jobs:
             -o app/src/main/assets/cloudflared-arm64
           chmod +x app/src/main/assets/cloudflared-arm64
 
-      # ── 6. Decode keystore ───────────────────────────────────────────────────
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+          else
+            keytool -genkeypair -v \
+              -keystore app/keystore.jks \
+              -alias camerastream \
+              -keyalg RSA -keysize 2048 \
+              -validity 10000 \
+              -storepass camerastream123 \
+              -keypass camerastream123 \
+              -dname "CN=CameraStream, OU=Dev, O=EstacionKUS, L=Irapuato, S=GTO, C=MX"
+            echo "⚠️ Usando keystore temporal autogenerado"
+          fi
 
-      # ── 7. Grant Gradle permissions ──────────────────────────────────────────
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ── 8. Build Release APK ─────────────────────────────────────────────────
       - name: Build Release APK
         run: ./gradlew assembleRelease --no-daemon --stacktrace
         env:
           KEYSTORE_FILE: app/keystore.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'camerastream' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
-      # ── 9. Rename APK con version + fecha ────────────────────────────────────
       - name: Rename APK
         id: apk_name
         run: |
           DATE=$(date +'%Y%m%d-%H%M')
           APK_SRC=$(find app/build/outputs/apk/release -name "*.apk" | head -1)
-          APK_NAME="CameraStream-v$(grep versionName app/build.gradle.kts | grep -oP '[\d.]+')-${DATE}.apk"
+          APK_NAME="CameraStream-v1.1.0-${DATE}.apk"
           cp "$APK_SRC" "/tmp/${APK_NAME}"
           echo "apk_path=/tmp/${APK_NAME}" >> $GITHUB_OUTPUT
           echo "apk_name=${APK_NAME}" >> $GITHUB_OUTPUT
 
-      # ── 10. Upload APK as GitHub Artifact ─────────────────────────────────────
       - name: Upload APK as GitHub Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -85,40 +85,25 @@ jobs:
           path: ${{ steps.apk_name.outputs.apk_path }}
           retention-days: 30
 
-      # ── 11. Install rclone ────────────────────────────────────────────────────
-      - name: Install rclone
+      - name: Upload to OneDrive (opcional)
+        if: ${{ secrets.ONEDRIVE_RCLONE_TOKEN != '' }}
         run: |
           curl https://rclone.org/install.sh | sudo bash
-
-      # ── 12. Configure rclone OneDrive ─────────────────────────────────────────
-      - name: Configure rclone for OneDrive
-        run: |
           mkdir -p ~/.config/rclone
-          cat > ~/.config/rclone/rclone.conf << 'EOF'
+          cat > ~/.config/rclone/rclone.conf << EOF
           [onedrive]
           type = onedrive
           token = ${{ secrets.ONEDRIVE_RCLONE_TOKEN }}
           drive_id = ${{ secrets.ONEDRIVE_DRIVE_ID }}
           drive_type = personal
           EOF
+          rclone copy "${{ steps.apk_name.outputs.apk_path }}" "onedrive:CameraStream/APKs/" --progress
 
-      # ── 13. Upload APK to OneDrive ────────────────────────────────────────────
-      - name: Upload APK to OneDrive
-        run: |
-          rclone copy "${{ steps.apk_name.outputs.apk_path }}" \
-            "onedrive:CameraStream/APKs/" \
-            --progress \
-            --stats-one-line
-          echo "✅ APK subido a OneDrive: CameraStream/APKs/${{ steps.apk_name.outputs.apk_name }}"
-
-      # ── 14. Summary ───────────────────────────────────────────────────────────
       - name: Build Summary
         run: |
-          echo "## ✅ Build Completado" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ APK Listo" >> $GITHUB_STEP_SUMMARY
           echo "| Campo | Valor |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| APK | ${{ steps.apk_name.outputs.apk_name }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| OneDrive | CameraStream/APKs/ |" >> $GITHUB_STEP_SUMMARY
+          echo "| Archivo | ${{ steps.apk_name.outputs.apk_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Descarga | GitHub Actions → Artifacts |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Rama | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
