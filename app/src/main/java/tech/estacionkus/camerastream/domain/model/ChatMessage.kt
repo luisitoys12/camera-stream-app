@@ -3,8 +3,7 @@ package tech.estacionkus.camerastream.domain.model
 data class ChatMessage(
     val id: String,
     val author: String,
-    val message: String,
+    val content: String,
     val platform: Platform,
-    val timestampMs: Long = System.currentTimeMillis(),
-    val authorColor: String = "#FFFFFF"
+    val authorColor: String = "#9B59B6"
 )
