@@ -23,9 +23,14 @@ jobs:
       - name: Bootstrap gradle-wrapper.jar
         run: |
           curl -fsSL \
-            "https://repo.maven.apache.org/maven2/org/gradle/gradle-wrapper/8.11.1/gradle-wrapper-8.11.1.jar" \
-            -o gradle/wrapper/gradle-wrapper.jar
+            "https://services.gradle.org/distributions/gradle-8.11.1-bin.zip" \
+            -o /tmp/gradle.zip
+          unzip -p /tmp/gradle.zip "gradle-8.11.1/lib/gradle-wrapper.jar" \
+            > gradle/wrapper/gradle-wrapper.jar 2>/dev/null || \
+          unzip /tmp/gradle.zip -d /tmp/gradle-dist && \
+          find /tmp/gradle-dist -name "gradle-wrapper.jar" -exec cp {} gradle/wrapper/gradle-wrapper.jar \;
           chmod +x gradlew
+          echo "gradle-wrapper.jar size: $(wc -c < gradle/wrapper/gradle-wrapper.jar) bytes"
 
       - uses: gradle/actions/setup-gradle@v3
         with:
@@ -60,9 +65,14 @@ jobs:
       - name: Bootstrap gradle-wrapper.jar
         run: |
           curl -fsSL \
-            "https://repo.maven.apache.org/maven2/org/gradle/gradle-wrapper/8.11.1/gradle-wrapper-8.11.1.jar" \
-            -o gradle/wrapper/gradle-wrapper.jar
+            "https://services.gradle.org/distributions/gradle-8.11.1-bin.zip" \
+            -o /tmp/gradle.zip
+          unzip -p /tmp/gradle.zip "gradle-8.11.1/lib/gradle-wrapper.jar" \
+            > gradle/wrapper/gradle-wrapper.jar 2>/dev/null || \
+          unzip /tmp/gradle.zip -d /tmp/gradle-dist && \
+          find /tmp/gradle-dist -name "gradle-wrapper.jar" -exec cp {} gradle/wrapper/gradle-wrapper.jar \;
           chmod +x gradlew
+          echo "gradle-wrapper.jar size: $(wc -c < gradle/wrapper/gradle-wrapper.jar) bytes"
 
       - uses: gradle/actions/setup-gradle@v3
         with:
