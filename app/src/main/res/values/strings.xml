@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CameraStream</string>
+    <string name="btn_start_stream">Iniciar Stream</string>
+    <string name="btn_stop_stream">Detener</string>
+    <string name="label_settings">Configuración</string>
+    <string name="label_srt_host">Host SRT</string>
+    <string name="label_stream_key">Stream Key</string>
+</resources>
