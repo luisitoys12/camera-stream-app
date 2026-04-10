@@ -1,25 +1,21 @@
 cmake_minimum_required(VERSION 3.22.1)
-project("camerastream")
+project(camerastream)
 
-# Futuro: vincular libsrt compilada para Android
-# Pasos para compilar libsrt:
-#   git clone https://github.com/Haivision/srt
-#   cd srt && mkdir build-android && cd build-android
-#   cmake -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-#         -DANDROID_ABI=arm64-v8a \
-#         -DANDROID_NATIVE_API_LEVEL=26 \
-#         -DENABLE_SHARED=ON ..
-#   make -j4
+# libsrt path (compile with NDK toolchain first, see README)
+set(SRT_DIR ${CMAKE_SOURCE_DIR}/srt)
 
-# Librería JNI placeholder para SRT
-add_library(
-    srt-jni
-    SHARED
+add_library(camerastream SHARED
     srt_jni.cpp
 )
 
-target_link_libraries(
-    srt-jni
+target_link_libraries(camerastream
     android
     log
+    ${SRT_DIR}/lib/${ANDROID_ABI}/libsrt.a
+    ${SRT_DIR}/lib/${ANDROID_ABI}/libssl.a
+    ${SRT_DIR}/lib/${ANDROID_ABI}/libcrypto.a
+)
+
+target_include_directories(camerastream PRIVATE
+    ${SRT_DIR}/include
 )

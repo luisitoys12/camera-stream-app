@@ -2,23 +2,35 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
+    alias(libs.plugins.ksp)
 }
 
 android {
-    namespace = "com.cushMedia.camerastream"
+    namespace = "tech.estacionkus.camerastream"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.cushMedia.camerastream"
+        applicationId = "tech.estacionkus.camerastream"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        externalNativeBuild {
+            cmake { cppFlags += "-std=c++17" }
+        }
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
-    buildFeatures {
-        compose = true
-        buildConfig = true
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 
     compileOptions {
@@ -26,57 +38,70 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlinOptions { jvmTarget = "17" }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
     }
 
-    // NDK config para libsrt nativa
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 
-    buildTypes {
-        debug {
-            isDebuggable = true
-            isMinifyEnabled = false
-            buildConfigField("Boolean", "ENABLE_LOGGING", "true")
-        }
-        release {
-            isDebuggable = false
-            isMinifyEnabled = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("Boolean", "ENABLE_LOGGING", "false")
-        }
+    packaging {
+        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime)
-    implementation(libs.androidx.lifecycle.viewmodel)
-    implementation(libs.androidx.activity.compose)
-
-    // Compose
+    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.icons.extended)
-    debugImplementation(libs.androidx.ui.tooling)
+    implementation(libs.androidx.material.icons.extended)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.navigation.compose)
 
-    // CameraX
-    implementation(libs.camera.core)
-    implementation(libs.camera.camera2)
-    implementation(libs.camera.lifecycle)
-    implementation(libs.camera.video)
-    implementation(libs.camera.view)
+    // Hilt DI
+    implementation(libs.hilt.android)
+    implementation(libs.hilt.navigation.compose)
+    ksp(libs.hilt.compiler)
+
+    // DataStore
+    implementation(libs.androidx.datastore.preferences)
+
+    // RTMP streaming
+    implementation("com.github.NodeMedia:NodeMediaClient-android:3.2.1")
+
+    // Media / ExoPlayer
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 
-    // Navigation
-    implementation(libs.navigation.compose)
+    // Coil for image loading
+    implementation(libs.coil.compose)
+    implementation(libs.coil.video)
+
+    // Permissions
+    implementation(libs.accompanist.permissions)
+
+    // Core
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
+
+    debugImplementation(libs.androidx.ui.tooling)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
