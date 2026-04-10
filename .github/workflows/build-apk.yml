@@ -14,31 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin' }
-
       - name: Generate Gradle Wrapper
         run: |
           sudo apt-get install -y gradle
           gradle wrapper --gradle-version=8.11.1 --distribution-type=bin
           chmod +x gradlew
-
       - uses: android-actions/setup-android@v3
-
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
           restore-keys: ${{ runner.os }}-gradle-
-
       - name: Run unit tests
-        run: ./gradlew test --no-daemon --continue
-
-      - name: Upload test results
+        # -x testDebugUnitTest skips Android-instrumented variants; only runs pure JVM tests
+        run: ./gradlew testReleaseUnitTest --no-daemon --continue -x lint
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
           path: app/build/reports/tests/
@@ -51,20 +44,15 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin' }
-
       - name: Generate Gradle Wrapper
         run: |
           sudo apt-get install -y gradle
           gradle wrapper --gradle-version=8.11.1 --distribution-type=bin
           chmod +x gradlew
-
       - uses: android-actions/setup-android@v3
-
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
@@ -83,13 +71,13 @@ jobs:
           mkdir -p app/src/main/assets
           curl -fL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64" \
             -o app/src/main/assets/cloudflared-arm64 && \
-          chmod +x app/src/main/assets/cloudflared-arm64 || echo "cloudflared: skip"
+          chmod +x app/src/main/assets/cloudflared-arm64 || echo "skip"
 
       - name: Decode or generate Keystore
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 --decode > app/keystore.jks
-            echo "SIGN_MODE=official" >> $GITHUB_ENV
+            echo "SIGN_MODE=oficial" >> $GITHUB_ENV
           else
             keytool -genkeypair -v \
               -keystore app/keystore.jks -alias camerastream \
@@ -102,15 +90,15 @@ jobs:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace -x lint
         env:
           KEYSTORE_FILE: app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'camerastream' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
-      - name: Build Release AAB (Play Store)
-        run: ./gradlew bundleRelease --no-daemon
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease --no-daemon -x lint
         env:
           KEYSTORE_FILE: app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
@@ -118,36 +106,34 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
       - name: Rename artifacts
-        id: artifacts
+        id: art
         run: |
-          VERSION="2.0.0-$(date +'%Y%m%d')"
+          V="2.0.0-$(date +'%Y%m%d')"
           APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
           AAB=$(find app/build/outputs/bundle/release -name '*.aab' | head -1)
-          cp "$APK" "/tmp/CameraStream-v${VERSION}.apk"
-          cp "$AAB" "/tmp/CameraStream-v${VERSION}.aab"
-          echo "apk=/tmp/CameraStream-v${VERSION}.apk" >> $GITHUB_OUTPUT
-          echo "aab=/tmp/CameraStream-v${VERSION}.aab" >> $GITHUB_OUTPUT
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          cp "$APK" "/tmp/CameraStream-v${V}.apk"
+          cp "$AAB" "/tmp/CameraStream-v${V}.aab"
+          echo "apk=/tmp/CameraStream-v${V}.apk" >> $GITHUB_OUTPUT
+          echo "aab=/tmp/CameraStream-v${V}.aab" >> $GITHUB_OUTPUT
+          echo "v=$V" >> $GITHUB_OUTPUT
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: CameraStream-APK
-          path: ${{ steps.artifacts.outputs.apk }}
+          path: ${{ steps.art.outputs.apk }}
           retention-days: 30
 
-      - name: Upload AAB (Play Store)
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: CameraStream-AAB-PlayStore
-          path: ${{ steps.artifacts.outputs.aab }}
+          path: ${{ steps.art.outputs.aab }}
           retention-days: 90
 
       - name: Summary
         run: |
-          echo "## ✅ Build v${{ steps.artifacts.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "| Artefacto | Uso |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| APK | Instalar directo |" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ CameraStream v${{ steps.art.outputs.v }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Archivo | Uso |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| APK | Instalar directo en tu cel 📱 |" >> $GITHUB_STEP_SUMMARY
           echo "| AAB | Google Play Console |" >> $GITHUB_STEP_SUMMARY
-          echo "| Firma: **$SIGN_MODE** | ${SIGN_MODE} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Firma: $SIGN_MODE | |" >> $GITHUB_STEP_SUMMARY

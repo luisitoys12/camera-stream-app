@@ -12,11 +12,9 @@ class SceneManagerTest {
 
     @Before fun setup() { manager = SceneManager() }
 
-    @Test fun defaultSceneIsMain() {
-        assertEquals("main", manager.activeSceneId.value)
-    }
+    @Test fun defaultSceneIsMain() { assertEquals("main", manager.activeSceneId.value) }
 
-    @Test fun initialScenesIncludeMainBrbAndStart() {
+    @Test fun initialScenesHaveThreeEntries() {
         val ids = manager.scenes.value.map { it.id }
         assertTrue(ids.containsAll(listOf("main", "brb", "start")))
     }
@@ -27,17 +25,17 @@ class SceneManagerTest {
         assertEquals(before + 1, manager.scenes.value.size)
     }
 
-    @Test fun switchToChangesActiveSceneId() {
+    @Test fun switchToChangesActive() {
         manager.switchTo("brb")
         assertEquals("brb", manager.activeSceneId.value)
     }
 
-    @Test fun deleteSceneMainIsIgnored() {
+    @Test fun cannotDeleteMain() {
         manager.deleteScene("main")
         assertTrue(manager.scenes.value.any { it.id == "main" })
     }
 
-    @Test fun deleteSceneNonMainRemovesIt() {
+    @Test fun deleteNonMainRemovesIt() {
         manager.deleteScene("brb")
         assertFalse(manager.scenes.value.any { it.id == "brb" })
     }
@@ -48,18 +46,14 @@ class SceneManagerTest {
         assertEquals("main", manager.activeSceneId.value)
     }
 
-    @Test fun addOverlayAddsToScene() {
-        val overlay = OverlayItem("test_overlay", OverlayType.LOWER_THIRD, text = "Gol de Checo!")
-        manager.addOverlay("main", overlay)
-        val scene = manager.scenes.value.find { it.id == "main" }!!
-        assertTrue(scene.overlays.any { it.id == "test_overlay" })
+    @Test fun addOverlayAppearsInScene() {
+        manager.addOverlay("main", OverlayItem("o1", OverlayType.LOWER_THIRD, text = "Gol!"))
+        assertTrue(manager.scenes.value.find { it.id == "main" }!!.overlays.any { it.id == "o1" })
     }
 
-    @Test fun removeOverlayRemovesFromScene() {
-        val overlay = OverlayItem("rem_overlay", OverlayType.WATERMARK)
-        manager.addOverlay("main", overlay)
-        manager.removeOverlay("main", "rem_overlay")
-        val scene = manager.scenes.value.find { it.id == "main" }!!
-        assertFalse(scene.overlays.any { it.id == "rem_overlay" })
+    @Test fun removeOverlayDisappearsFromScene() {
+        manager.addOverlay("main", OverlayItem("o2", OverlayType.WATERMARK))
+        manager.removeOverlay("main", "o2")
+        assertFalse(manager.scenes.value.find { it.id == "main" }!!.overlays.any { it.id == "o2" })
     }
 }
