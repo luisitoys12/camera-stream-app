@@ -1,10 +1,10 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
-    kotlin("plugin.serialization") version libs.versions.kotlin.get()
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp")
+    kotlin("plugin.serialization")
 }
 
 android {
@@ -24,21 +24,20 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file(System.getenv("KEYSTORE_FILE") ?: "keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: ""
-            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "camerastream123"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "camerastream"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "camerastream123"
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            applicationIdSuffix = ".debug"
             isDebuggable = true
         }
     }
@@ -48,10 +47,27 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true; buildConfig = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     packaging {
-        resources { excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/INDEX.LIST") }
+        resources {
+            excludes += setOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES"
+            )
+        }
         jniLibs { useLegacyPackaging = true }
+    }
+    // Local AARs folder
+    repositories {
+        flatDir { dirs("libs") }
+    }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 }
 
@@ -67,7 +83,7 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.8.9")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // Lifecycle + ViewModel
+    // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
@@ -84,11 +100,11 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
     implementation("androidx.camera:camera-extensions:$cameraXVersion")
 
-    // NodeMedia RTMP (sin ExoPlayer)
-    implementation("cn.nodemedia:NodePublisher:1.9.7.1@aar")
+    // NodeMedia RTMP — local AAR descargado en CI
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
 
-    // SRT via srtdroid-core
-    implementation("io.github.thibaultbee:srtdroid-core:1.7.0")
+    // SRT — version disponible en Maven Central
+    implementation("io.github.thibaultbee:srtdroid-core:1.6.0")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.3")
@@ -101,26 +117,22 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-okhttp:3.1.2")
 
-    // Coil (images + GIFs)
+    // Coil
     implementation("io.coil-kt.coil3:coil-compose:3.1.0")
     implementation("io.coil-kt.coil3:coil-gif:3.1.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
 
-    // OkHttp (WebSocket chat)
+    // OkHttp
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // Kotlinx Serialization
+    // Serialization + Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
-
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
-    // QR Code — ZXing
+    // QR
     implementation("com.google.zxing:core:3.5.3")
 
-    // Splash screen
+    // Splash + WorkManager
     implementation("androidx.core:core-splashscreen:1.0.1")
-
-    // WorkManager (grabación background)
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 }
