@@ -118,6 +118,7 @@ jobs:
           echo "v=$V" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
+        id: apk_artifact
         with:
           name: CameraStream-APK
           path: ${{ steps.art.outputs.apk }}
@@ -129,11 +130,44 @@ jobs:
           path: ${{ steps.art.outputs.aab }}
           retention-days: 90
 
+      - name: Generate QR code for APK download
+        run: |
+          pip install qrcode[pil] --quiet
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          python3 - <<'EOF'
+          import qrcode, os, base64, io
+          url = os.environ["RUN_URL"]
+          qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
+          qr.add_data(url)
+          qr.make(fit=True)
+          img = qr.make_image(fill_color="black", back_color="white")
+          buf = io.BytesIO()
+          img.save(buf, format="PNG")
+          b64 = base64.b64encode(buf.getvalue()).decode()
+          with open("/tmp/qr_b64.txt", "w") as f:
+              f.write(b64)
+          EOF
+        env:
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
       - name: Summary
         run: |
-          echo "## ✅ CameraStream v${{ steps.art.outputs.v }}" >> $GITHUB_STEP_SUMMARY
+          V="${{ steps.art.outputs.v }}"
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          QR_B64=$(cat /tmp/qr_b64.txt)
+
+          echo "## ✅ CameraStream v${V}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 Escanea para descargar el APK" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "![QR APK](data:image/png;base64,${QR_B64})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Abre la cámara de tu cel, escanea el QR y baja directo a la página del run → **CameraStream-APK**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Archivo | Uso |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
           echo "| APK | Instalar directo en tu cel 📱 |" >> $GITHUB_STEP_SUMMARY
           echo "| AAB | Google Play Console |" >> $GITHUB_STEP_SUMMARY
           echo "| Firma: $SIGN_MODE | |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [Ir al run directamente](${RUN_URL})" >> $GITHUB_STEP_SUMMARY
