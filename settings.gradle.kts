@@ -11,7 +11,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io") }
+        maven { url = uri("https://maven.nodemedia.cn/repository/NodePublisher/") }
     }
 }
-rootProject.name = "CameraStreamApp"
+rootProject.name = "CameraStream"
 include(":app")
