@@ -15,8 +15,8 @@ android {
         applicationId = "tech.estacionkus.camerastream"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "2.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
@@ -58,7 +58,6 @@ android {
 }
 
 dependencies {
-    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
@@ -78,23 +77,39 @@ dependencies {
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 
-    // RTMP streaming
+    // RTMP streaming (NodeMedia - nativo, sin ExoPlayer para streaming)
     implementation("com.github.NodeMedia:NodeMediaClient-android:3.2.1")
 
-    // Media / ExoPlayer
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
+    // SRT nativo via libsrt JNI wrapper
+    implementation("com.github.thibaultbee:srtdroid-core:1.7.0")
+
+    // Ktor para servidor HTTP local (control remoto, status endpoint)
+    implementation("io.ktor:ktor-server-core:2.3.12")
+    implementation("io.ktor:ktor-server-netty:2.3.12")
+    implementation("io.ktor:ktor-server-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+    implementation("io.ktor:ktor-server-cors:2.3.12")
+    implementation("io.ktor:ktor-server-websockets:2.3.12")
+
+    // Supabase
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.4"))
+    implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:functions-kt")
+    implementation("io.ktor:ktor-client-android:2.3.12")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
 
-    // Coil for image loading
+    // Coil image loading (nativo, sin video via ExoPlayer)
     implementation(libs.coil.compose)
-    implementation(libs.coil.video)
 
     // Permissions
     implementation(libs.accompanist.permissions)
+
+    // QR Code generation
+    implementation("com.google.zxing:core:3.5.3")
 
     // Core
     implementation(libs.androidx.core.ktx)
