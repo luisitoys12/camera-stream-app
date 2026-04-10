@@ -11,15 +11,19 @@ class FeatureGateTest {
 
     @Before fun setup() { gate = FeatureGate() }
 
-    @Test fun `free plan cannot multistream`() {
+    @Test fun freePlanCannotMultistream() {
         assertFalse(gate.canMultiStream())
     }
 
-    @Test fun `free plan cannot SRT`() {
+    @Test fun freePlanCannotSrt() {
         assertFalse(gate.canSrt())
     }
 
-    @Test fun `pro plan can do everything`() {
+    @Test fun freePlanCannotSrtServer() {
+        assertFalse(gate.canSrtServer())
+    }
+
+    @Test fun proPlanCanDoEverything() {
         gate.upgrade(PlanFeatures.PRO)
         assertTrue(gate.canMultiStream())
         assertTrue(gate.canSrt())
@@ -30,14 +34,19 @@ class FeatureGateTest {
         assertTrue(gate.can1080p())
     }
 
-    @Test fun `check returns error message for locked features`() {
+    @Test fun checkReturnsErrorMessageForLockedFeature() {
         assertNotNull(gate.check("srt"))
         assertNotNull(gate.check("scenes"))
     }
 
-    @Test fun `check returns null for unlocked features after upgrade`() {
+    @Test fun checkReturnsNullForUnlockedFeaturesAfterUpgrade() {
         gate.upgrade(PlanFeatures.PRO)
         assertNull(gate.check("srt"))
         assertNull(gate.check("scenes"))
+        assertNull(gate.check("manual_cam"))
+    }
+
+    @Test fun unknownFeatureReturnsNull() {
+        assertNull(gate.check("unknown_feature_xyz"))
     }
 }

@@ -12,44 +12,50 @@ class SceneManagerTest {
 
     @Before fun setup() { manager = SceneManager() }
 
-    @Test fun `default scene is main`() {
+    @Test fun defaultSceneIsMain() {
         assertEquals("main", manager.activeSceneId.value)
     }
 
-    @Test fun `initial scenes include main brb and start`() {
+    @Test fun initialScenesIncludeMainBrbAndStart() {
         val ids = manager.scenes.value.map { it.id }
         assertTrue(ids.containsAll(listOf("main", "brb", "start")))
     }
 
-    @Test fun `addScene increases count`() {
+    @Test fun addSceneIncreasesCount() {
         val before = manager.scenes.value.size
         manager.addScene("Goles")
         assertEquals(before + 1, manager.scenes.value.size)
     }
 
-    @Test fun `switchTo changes activeSceneId`() {
+    @Test fun switchToChangesActiveSceneId() {
         manager.switchTo("brb")
         assertEquals("brb", manager.activeSceneId.value)
     }
 
-    @Test fun `deleteScene main is ignored`() {
+    @Test fun deleteSceneMainIsIgnored() {
         manager.deleteScene("main")
         assertTrue(manager.scenes.value.any { it.id == "main" })
     }
 
-    @Test fun `deleteScene non-main removes it`() {
+    @Test fun deleteSceneNonMainRemovesIt() {
         manager.deleteScene("brb")
         assertFalse(manager.scenes.value.any { it.id == "brb" })
     }
 
-    @Test fun `addOverlay adds to scene`() {
+    @Test fun deleteActiveSceneFallsBackToMain() {
+        manager.switchTo("brb")
+        manager.deleteScene("brb")
+        assertEquals("main", manager.activeSceneId.value)
+    }
+
+    @Test fun addOverlayAddsToScene() {
         val overlay = OverlayItem("test_overlay", OverlayType.LOWER_THIRD, text = "Gol de Checo!")
         manager.addOverlay("main", overlay)
         val scene = manager.scenes.value.find { it.id == "main" }!!
         assertTrue(scene.overlays.any { it.id == "test_overlay" })
     }
 
-    @Test fun `removeOverlay removes from scene`() {
+    @Test fun removeOverlayRemovesFromScene() {
         val overlay = OverlayItem("rem_overlay", OverlayType.WATERMARK)
         manager.addOverlay("main", overlay)
         manager.removeOverlay("main", "rem_overlay")

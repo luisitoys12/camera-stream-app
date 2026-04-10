@@ -5,34 +5,44 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with: { java-version: '17', distribution: 'temurin' }
+
       - name: Generate Gradle Wrapper
         run: |
           sudo apt-get install -y gradle
           gradle wrapper --gradle-version=8.11.1 --distribution-type=bin
           chmod +x gradlew
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+
+      - uses: android-actions/setup-android@v3
+
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
       - name: Run unit tests
-        run: ./gradlew test --no-daemon
+        run: ./gradlew test --no-daemon --continue
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-results
           path: app/build/reports/tests/
+          if-no-files-found: warn
 
   build:
     name: Build Signed APK + AAB
@@ -66,7 +76,7 @@ jobs:
         run: |
           mkdir -p app/libs
           curl -fL "https://github.com/NodeMedia/NodeMediaClient-Android/releases/download/2.9.2/NodeMediaClient.aar" \
-            -o app/libs/NodeMediaClient.aar 2>/dev/null || echo "NodeMedia: using JitPack dep"
+            -o app/libs/NodeMediaClient.aar 2>/dev/null || echo "NodeMedia: usando JitPack"
 
       - name: Download cloudflared arm64
         run: |
@@ -75,25 +85,24 @@ jobs:
             -o app/src/main/assets/cloudflared-arm64 && \
           chmod +x app/src/main/assets/cloudflared-arm64 || echo "cloudflared: skip"
 
-      - name: Decode Keystore
+      - name: Decode or generate Keystore
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 --decode > app/keystore.jks
-            echo "SIGNED=true" >> $GITHUB_ENV
+            echo "SIGN_MODE=official" >> $GITHUB_ENV
           else
             keytool -genkeypair -v \
               -keystore app/keystore.jks -alias camerastream \
               -keyalg RSA -keysize 2048 -validity 10000 \
               -storepass camerastream123 -keypass camerastream123 \
               -dname "CN=CameraStream,OU=Dev,O=EstacionKUS,L=Irapuato,S=GTO,C=MX" 2>/dev/null
-            echo "SIGNED=auto" >> $GITHUB_ENV
+            echo "SIGN_MODE=auto" >> $GITHUB_ENV
           fi
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build Release APK
-        run: |
-          ./gradlew assembleRelease --no-daemon --stacktrace
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
         env:
           KEYSTORE_FILE: app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
@@ -101,8 +110,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
       - name: Build Release AAB (Play Store)
-        run: |
-          ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon
         env:
           KEYSTORE_FILE: app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
@@ -135,11 +143,11 @@ jobs:
           path: ${{ steps.artifacts.outputs.aab }}
           retention-days: 90
 
-      - name: Build Summary
+      - name: Summary
         run: |
-          echo "## ✅ Build exitoso — v${{ steps.artifacts.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "| Archivo | Uso |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| CameraStream-APK | Instalar directo en dispositivo |" >> $GITHUB_STEP_SUMMARY
-          echo "| CameraStream-AAB-PlayStore | Subir a Google Play Console |" >> $GITHUB_STEP_SUMMARY
-          echo "| Firma: **$SIGNED** | ${{ secrets.KEYSTORE_BASE64 != '' && 'Keystore oficial' || 'Keystore auto-generado — reemplazar para produccion' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build v${{ steps.artifacts.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Artefacto | Uso |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| APK | Instalar directo |" >> $GITHUB_STEP_SUMMARY
+          echo "| AAB | Google Play Console |" >> $GITHUB_STEP_SUMMARY
+          echo "| Firma: **$SIGN_MODE** | ${SIGN_MODE} |" >> $GITHUB_STEP_SUMMARY

@@ -7,9 +7,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import tech.estacionkus.camerastream.domain.model.WhiteBalance
 
-enum class WhiteBalance(val label: String) { AUTO("Auto"), INCANDESCENT("Incandescente"), DAYLIGHT("Luz día"), CLOUDY("Nublado") }
+// WhiteBalance defined here — no external import needed
+enum class WhiteBalance(val label: String) {
+    AUTO("Auto"),
+    INCANDESCENT("Incandescente"),
+    DAYLIGHT("Luz día"),
+    CLOUDY("Nublado")
+}
 
 @Composable
 fun ManualCameraScreen(onBack: () -> Unit) {
@@ -17,6 +22,8 @@ fun ManualCameraScreen(onBack: () -> Unit) {
     var zoom by remember { mutableStateOf(1f) }
     var wb by remember { mutableStateOf(WhiteBalance.AUTO) }
     var stabilization by remember { mutableStateOf(true) }
+    var iso by remember { mutableStateOf("Auto") }
+    val isoOptions = listOf("Auto", "100", "200", "400", "800", "1600")
 
     Scaffold(
         topBar = {
@@ -32,15 +39,37 @@ fun ManualCameraScreen(onBack: () -> Unit) {
         ) {
             Text("Exposición: ${exposure.toInt()}")
             Slider(value = exposure, onValueChange = { exposure = it }, valueRange = -4f..4f, steps = 7, modifier = Modifier.fillMaxWidth())
-            Text("Zoom: ${"%,.1f".format(zoom)}x")
+
+            Text("Zoom: ${"%.1f".format(zoom)}x")
             Slider(value = zoom, onValueChange = { zoom = it }, valueRange = 1f..10f, modifier = Modifier.fillMaxWidth())
+
             Text("Balance de blancos")
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 WhiteBalance.entries.forEach { w ->
-                    FilterChip(selected = wb == w, onClick = { wb = w }, label = { Text(w.label, style = MaterialTheme.typography.labelSmall) })
+                    FilterChip(
+                        selected = wb == w,
+                        onClick = { wb = w },
+                        label = { Text(w.label, style = MaterialTheme.typography.labelSmall) }
+                    )
                 }
             }
-            FilterChip(selected = stabilization, onClick = { stabilization = !stabilization }, label = { Text("Estabilización") })
+
+            Text("ISO")
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                isoOptions.forEach { opt ->
+                    FilterChip(
+                        selected = iso == opt,
+                        onClick = { iso = opt },
+                        label = { Text(opt, style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
+            }
+
+            FilterChip(
+                selected = stabilization,
+                onClick = { stabilization = !stabilization },
+                label = { Text("Estabilización óptica") }
+            )
         }
     }
 }

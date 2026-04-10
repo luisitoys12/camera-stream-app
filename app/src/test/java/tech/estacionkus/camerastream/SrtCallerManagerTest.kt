@@ -1,6 +1,6 @@
 package tech.estacionkus.camerastream
 
-import app.cash.turbine.test
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Before
@@ -13,28 +13,38 @@ class SrtCallerManagerTest {
 
     @Before fun setup() { manager = SrtCallerManager() }
 
-    @Test fun `initial state is IDLE`() = runTest {
-        manager.state.test {
-            assertEquals(StreamState.IDLE, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
+    @Test fun initialStateIsIdle() = runTest {
+        assertEquals(StreamState.IDLE, manager.state.value)
     }
 
-    @Test fun `recommendedLatency returns at least 120ms`() {
+    @Test fun recommendedLatencyAtLeast120ms() {
         assertTrue(manager.recommendedLatency() >= 120)
     }
 
-    @Test fun `recommendedLatency with high RTT returns rtt x4`() {
-        // Simulate 50ms RTT via reflection
-        val field = manager.javaClass.getDeclaredField("_rttMs")
+    @Test fun recommendedLatencyWithHighRttReturnsRttX4() {
+        // Access private MutableStateFlow via reflection
+        val field = SrtCallerManager::class.java.getDeclaredField("_rttMs")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
-        val flow = field.get(manager) as kotlinx.coroutines.flow.MutableStateFlow<Int>
+        val flow = field.get(manager) as MutableStateFlow<Int>
         flow.value = 50
         assertEquals(200, manager.recommendedLatency())
     }
 
-    @Test fun `disconnect does not throw when not connected`() {
-        assertDoesNotThrow { manager.disconnect() }
+    @Test fun disconnectWhenNotConnectedDoesNotCrash() {
+        // Should complete without exception
+        try {
+            manager.disconnect()
+        } catch (e: Exception) {
+            fail("disconnect() threw: ${e.message}")
+        }
+    }
+
+    @Test fun initialRttIsZero() {
+        assertEquals(0, manager.rttMs.value)
+    }
+
+    @Test fun initialBitrateIsZero() {
+        assertEquals(0, manager.bitrateKbps.value)
     }
 }
