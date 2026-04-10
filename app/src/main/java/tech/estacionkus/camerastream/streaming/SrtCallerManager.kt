@@ -1,10 +1,5 @@
 package tech.estacionkus.camerastream.streaming
 
-import android.util.Log
-import io.github.thibaultbee.srtdroid.core.Srt
-import io.github.thibaultbee.srtdroid.core.enums.SockOpt
-import io.github.thibaultbee.srtdroid.core.enums.Transtype
-import io.github.thibaultbee.srtdroid.core.models.SrtSocket
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,22 +14,27 @@ import javax.inject.Singleton
  *   - latency = RTT x 4 (recommended by Haivision for live events)
  *   - CBR mode for stable bitrate on mobile networks
  *   - MPEG-TS payload
+ *
+ * NOTE: SrtSocketWrapper isolates JNI/Android deps so core logic is unit-testable on JVM.
  */
 @Singleton
-class SrtCallerManager @Inject constructor() {
-    private val TAG = "SrtCallerManager"
+class SrtCallerManager @Inject constructor(
+    private val socketWrapper: SrtSocketWrapper = SrtSocketWrapper.real()
+) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _state = MutableStateFlow(StreamState.IDLE)
     val state: StateFlow<StreamState> = _state.asStateFlow()
+
     private val _rttMs = MutableStateFlow(0)
     val rttMs: StateFlow<Int> = _rttMs.asStateFlow()
+
     private val _bitrateKbps = MutableStateFlow(0)
     val bitrateKbps: StateFlow<Int> = _bitrateKbps.asStateFlow()
+
     private val _lostPct = MutableStateFlow(0f)
     val lostPct: StateFlow<Float> = _lostPct.asStateFlow()
 
-    private var socket: SrtSocket? = null
     private var callJob: Job? = null
     var onTsData: ((ByteArray, Int) -> Unit)? = null
 
@@ -42,9 +42,9 @@ class SrtCallerManager @Inject constructor() {
         val host: String,
         val port: Int,
         val streamId: String = "",
-        val latencyMs: Int = 200,      // auto-calculated RTT×4 if 0
-        val maxBandwidthKbps: Int = 0, // 0 = unlimited
-        val pbkeylen: Int = 0,         // 0=none, 16=AES-128, 32=AES-256
+        val latencyMs: Int = 200,
+        val maxBandwidthKbps: Int = 0,
+        val pbkeylen: Int = 0,
         val passphrase: String = ""
     )
 
@@ -52,42 +52,30 @@ class SrtCallerManager @Inject constructor() {
         if (_state.value == StreamState.LIVE) return
         callJob = scope.launch {
             try {
-                Srt.startUp()
-                socket = SrtSocket().apply {
-                    setSockFlag(SockOpt.TRANSTYPE, Transtype.LIVE)
-                    setSockFlag(SockOpt.RCVSYN, false)
-                    if (config.latencyMs > 0) setSockFlag(SockOpt.LATENCY, config.latencyMs)
-                    if (config.streamId.isNotBlank()) setSockFlag(SockOpt.STREAMID, config.streamId)
-                    if (config.passphrase.isNotBlank()) {
-                        setSockFlag(SockOpt.PBKEYLEN, config.pbkeylen.coerceAtLeast(16))
-                        setSockFlag(SockOpt.PASSPHRASE, config.passphrase)
-                    }
-                    if (config.maxBandwidthKbps > 0) setSockFlag(SockOpt.MAXBW, config.maxBandwidthKbps * 1000L)
-                }
+                socketWrapper.startup()
+                socketWrapper.configure(config)
                 _state.value = StreamState.CONNECTING
-                socket!!.connect(InetSocketAddress(config.host, config.port))
+                socketWrapper.connect(InetSocketAddress(config.host, config.port))
                 _state.value = StreamState.LIVE
-                Log.i(TAG, "SRT connected to ${config.host}:${config.port}")
                 receiveLoop()
             } catch (e: Exception) {
-                Log.e(TAG, "SRT error: ${e.message}")
+                socketWrapper.log("SRT error: ${e.message}")
                 _state.value = StreamState.ERROR
             } finally {
-                socket?.close()
+                socketWrapper.close()
                 _state.value = StreamState.IDLE
-                try { Srt.cleanUp() } catch (_: Exception) {}
+                socketWrapper.cleanup()
             }
         }
     }
 
     private suspend fun receiveLoop() {
-        val buf = ByteArray(1316) // MPEG-TS standard packet size
+        val buf = ByteArray(1316)
         var bytesTotal = 0L
         var pktTotal = 0L
-        var lostTotal = 0L
         var lastMs = System.currentTimeMillis()
         while (callJob?.isActive == true) {
-            val n = socket?.recv(buf) ?: break
+            val n = socketWrapper.recv(buf)
             if (n <= 0) break
             bytesTotal += n
             pktTotal++
@@ -95,16 +83,10 @@ class SrtCallerManager @Inject constructor() {
             val now = System.currentTimeMillis()
             if (now - lastMs >= 1000) {
                 _bitrateKbps.value = (bytesTotal * 8 / 1000).toInt()
-                try {
-                    // SRT stats — RTT and loss
-                    val stats = socket?.bistats(clear = true)
-                    stats?.let {
-                        _rttMs.value = it.msRTT.toInt()
-                        val lost = it.pktRcvLoss
-                        if (pktTotal > 0) _lostPct.value = lost.toFloat() / pktTotal * 100f
-                        lostTotal += lost
-                    }
-                } catch (_: Exception) {}
+                socketWrapper.readStats()?.let { stats ->
+                    _rttMs.value = stats.rttMs
+                    if (pktTotal > 0) _lostPct.value = stats.lostPkts.toFloat() / pktTotal * 100f
+                }
                 bytesTotal = 0
                 lastMs = now
             }
@@ -113,7 +95,7 @@ class SrtCallerManager @Inject constructor() {
 
     fun disconnect() {
         callJob?.cancel()
-        socket?.close()
+        socketWrapper.close()
         _state.value = StreamState.IDLE
         _rttMs.value = 0
         _bitrateKbps.value = 0
