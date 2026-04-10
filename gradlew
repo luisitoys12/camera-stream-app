@@ -1,33 +1,25 @@
 #!/bin/sh
-# Gradle wrapper startup script for POSIX
+#
+# Gradle startup script for POSIX systems.
+#
 set -e
 
-app_path=$0
-while [ -h "$app_path" ]; do
-    ls=$(ls -ld "$app_path")
-    link=${ls#*' -> '}
-    case $link in
-        /*) app_path=$link ;;
-        *)  app_path=$(dirname "$app_path")/$link ;;
-    esac
-done
-APP_HOME=$(cd "$(dirname "$app_path")" && pwd -P)
+APP_HOME=$( cd "${APP_HOME:-./}" && pwd -P ) || exit
 
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+CLASSPATH="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
 
-if [ -n "$JAVA_HOME" ]; then
-    JAVACMD=$JAVA_HOME/bin/java
+if [ -n "$JAVA_HOME" ] ; then
+    JAVACMD="$JAVA_HOME/bin/java"
 else
     JAVACMD=java
 fi
 
-DEFAULT_JVM_OPTS='"--add-opens=java.base/java.util=ALL-UNNAMED" "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED" "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED" "--add-opens=java.base/java.io=ALL-UNNAMED" "--add-opens=java.base/java.net=ALL-UNNAMED" "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED" "--add-opens=java.base/java.nio=ALL-UNNAMED"'
+if ! command -v "$JAVACMD" > /dev/null 2>&1; then
+    echo "ERROR: JAVA_HOME is not set and 'java' command not found in PATH." >&2
+    exit 1
+fi
 
 exec "$JAVACMD" \
-    $DEFAULT_JVM_OPTS \
-    ${JAVA_OPTS} \
-    ${GRADLE_OPTS} \
-    "-Dorg.gradle.appname=$(basename "$0")" \
     -classpath "$CLASSPATH" \
     org.gradle.wrapper.GradleWrapperMain \
     "$@"
