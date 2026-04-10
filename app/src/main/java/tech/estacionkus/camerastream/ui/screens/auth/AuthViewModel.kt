@@ -1,0 +1,69 @@
+package tech.estacionkus.camerastream.ui.screens.auth
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import tech.estacionkus.camerastream.data.auth.AuthRepository
+import tech.estacionkus.camerastream.data.auth.LicenseRepository
+import javax.inject.Inject
+
+data class AuthUiState(
+    val email: String = "",
+    val password: String = "",
+    val isLoading: Boolean = false,
+    val isAuthenticated: Boolean = false,
+    val error: String? = null,
+    val couponMessage: String? = null
+)
+
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val licenseRepository: LicenseRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(AuthUiState())
+    val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
+
+    fun setEmail(v: String) { _uiState.value = _uiState.value.copy(email = v) }
+    fun setPassword(v: String) { _uiState.value = _uiState.value.copy(password = v) }
+    fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
+
+    fun signIn() = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        try {
+            authRepository.signIn(_uiState.value.email, _uiState.value.password)
+            _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Error al iniciar sesión")
+        }
+    }
+
+    fun signUp() = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        try {
+            authRepository.signUp(_uiState.value.email, _uiState.value.password)
+            _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Error al crear cuenta")
+        }
+    }
+
+    fun redeemCoupon(code: String) = viewModelScope.launch {
+        if (!authRepository.isLoggedIn) {
+            _uiState.value = _uiState.value.copy(couponMessage = "Primero inicia sesión para canjear el cupón")
+            return@launch
+        }
+        _uiState.value = _uiState.value.copy(isLoading = true, couponMessage = null)
+        val result = licenseRepository.redeemCoupon(code)
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            couponMessage = result.message ?: result.error ?: "Respuesta inesperada",
+            isAuthenticated = result.success
+        )
+    }
+}
