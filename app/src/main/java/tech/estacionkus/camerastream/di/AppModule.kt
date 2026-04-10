@@ -17,6 +17,8 @@ object AppModule {
     @Provides @Singleton fun provideRtmp(@ApplicationContext c: Context) = RtmpStreamManager(c)
     @Provides @Singleton fun provideMultiStream(@ApplicationContext c: Context) = MultiStreamManager(c)
     @Provides @Singleton fun provideSrtServer() = SrtServerManager()
+    @Provides @Singleton fun provideSrtCaller() = SrtCallerManager()
+    @Provides @Singleton fun provideSportsMode() = SportsModeManager()
     @Provides @Singleton fun provideCloudflared(@ApplicationContext c: Context) = CloudflaredManager(c)
     @Provides @Singleton fun provideMultiChat() = MultiChatManager()
     @Provides @Singleton fun provideSceneManager() = SceneManager()

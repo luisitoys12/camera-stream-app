@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK & AAB (Play Store)
 
 on:
   push:
@@ -6,30 +6,52 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  test:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      # Instala Gradle del sistema y genera el wrapper correcto
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { java-version: '17', distribution: 'temurin' }
       - name: Generate Gradle Wrapper
         run: |
           sudo apt-get install -y gradle
           gradle wrapper --gradle-version=8.11.1 --distribution-type=bin
           chmod +x gradlew
-          ls -la gradlew gradle/wrapper/
-
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: app/build/reports/tests/
+
+  build:
+    name: Build Signed APK + AAB
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with: { java-version: '17', distribution: 'temurin' }
+
+      - name: Generate Gradle Wrapper
+        run: |
+          sudo apt-get install -y gradle
+          gradle wrapper --gradle-version=8.11.1 --distribution-type=bin
+          chmod +x gradlew
+
+      - uses: android-actions/setup-android@v3
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -44,70 +66,80 @@ jobs:
         run: |
           mkdir -p app/libs
           curl -fL "https://github.com/NodeMedia/NodeMediaClient-Android/releases/download/2.9.2/NodeMediaClient.aar" \
-            -o app/libs/NodeMediaClient.aar 2>/dev/null || \
-          curl -fL "https://github.com/NodeMedia/NodeMediaClient-Android/releases/download/2.8.0/NodeMediaClient.aar" \
-            -o app/libs/NodeMediaClient.aar 2>/dev/null || \
-          echo "NodeMedia no disponible, usando modo stub"
+            -o app/libs/NodeMediaClient.aar 2>/dev/null || echo "NodeMedia: using JitPack dep"
 
       - name: Download cloudflared arm64
         run: |
           mkdir -p app/src/main/assets
           curl -fL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64" \
-            -o app/src/main/assets/cloudflared-arm64
-          chmod +x app/src/main/assets/cloudflared-arm64
-          echo "cloudflared descargado: $(ls -lh app/src/main/assets/cloudflared-arm64)"
+            -o app/src/main/assets/cloudflared-arm64 && \
+          chmod +x app/src/main/assets/cloudflared-arm64 || echo "cloudflared: skip"
 
-      - name: Generate Keystore
+      - name: Decode Keystore
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 --decode > app/keystore.jks
-            echo "Keystore desde secret"
+            echo "SIGNED=true" >> $GITHUB_ENV
           else
             keytool -genkeypair -v \
-              -keystore app/keystore.jks \
-              -alias camerastream \
-              -keyalg RSA -keysize 2048 \
-              -validity 10000 \
-              -storepass camerastream123 \
-              -keypass camerastream123 \
-              -dname "CN=CameraStream,OU=Dev,O=EstacionKUS,L=Irapuato,S=GTO,C=MX"
-            echo "Keystore autogenerado"
+              -keystore app/keystore.jks -alias camerastream \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass camerastream123 -keypass camerastream123 \
+              -dname "CN=CameraStream,OU=Dev,O=EstacionKUS,L=Irapuato,S=GTO,C=MX" 2>/dev/null
+            echo "SIGNED=auto" >> $GITHUB_ENV
           fi
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build Release APK
         run: |
-          ./gradlew assembleRelease \
-            --no-daemon \
-            --stacktrace \
-            --info \
-            -Pandroid.useAndroidX=true
+          ./gradlew assembleRelease --no-daemon --stacktrace
         env:
           KEYSTORE_FILE: app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'camerastream' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
-      - name: Find and rename APK
-        id: apk
+      - name: Build Release AAB (Play Store)
         run: |
-          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          NAME="CameraStream-v1.1.0-$(date +'%Y%m%d-%H%M').apk"
-          cp "$APK" "/tmp/$NAME"
-          echo "path=/tmp/$NAME" >> $GITHUB_OUTPUT
-          echo "name=$NAME" >> $GITHUB_OUTPUT
-          echo "APK: $NAME"
+          ./gradlew bundleRelease --no-daemon
+        env:
+          KEYSTORE_FILE: app/keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'camerastream' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
-      - name: Upload Artifact
+      - name: Rename artifacts
+        id: artifacts
+        run: |
+          VERSION="2.0.0-$(date +'%Y%m%d')"
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          AAB=$(find app/build/outputs/bundle/release -name '*.aab' | head -1)
+          cp "$APK" "/tmp/CameraStream-v${VERSION}.apk"
+          cp "$AAB" "/tmp/CameraStream-v${VERSION}.aab"
+          echo "apk=/tmp/CameraStream-v${VERSION}.apk" >> $GITHUB_OUTPUT
+          echo "aab=/tmp/CameraStream-v${VERSION}.aab" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: CameraStream-APK
-          path: ${{ steps.apk.outputs.path }}
+          path: ${{ steps.artifacts.outputs.apk }}
           retention-days: 30
 
-      - name: Summary
+      - name: Upload AAB (Play Store)
+        uses: actions/upload-artifact@v4
+        with:
+          name: CameraStream-AAB-PlayStore
+          path: ${{ steps.artifacts.outputs.aab }}
+          retention-days: 90
+
+      - name: Build Summary
         run: |
-          echo "## ✅ APK listo para descargar" >> $GITHUB_STEP_SUMMARY
-          echo "**Archivo:** ${{ steps.apk.outputs.name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Descarga:** este run → Artifacts → CameraStream-APK" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Build exitoso — v${{ steps.artifacts.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "| Archivo | Uso |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| CameraStream-APK | Instalar directo en dispositivo |" >> $GITHUB_STEP_SUMMARY
+          echo "| CameraStream-AAB-PlayStore | Subir a Google Play Console |" >> $GITHUB_STEP_SUMMARY
+          echo "| Firma: **$SIGNED** | ${{ secrets.KEYSTORE_BASE64 != '' && 'Keystore oficial' || 'Keystore auto-generado — reemplazar para produccion' }} |" >> $GITHUB_STEP_SUMMARY
