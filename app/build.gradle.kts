@@ -81,8 +81,8 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
     implementation("androidx.camera:camera-extensions:$cameraXVersion")
 
-    // NodeMedia via JitPack — verified 3.2.12
-    implementation("com.github.NodeMedia:NodeMediaClient-Android:3.2.12")
+    // NodeMedia RTMP — local AAR downloaded by CI into app/libs
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
 
     // SRT — verified 1.9.1 on Maven Central
     implementation("io.github.thibaultbee.srtdroid:srtdroid-core:1.9.1")
