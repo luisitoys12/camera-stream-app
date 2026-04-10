@@ -10,8 +10,9 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
-    var rtmpUrl by remember { mutableStateOf("") }
+    var rtmpUrl by remember { mutableStateOf("rtmp://live.twitch.tv/live") }
     var streamKey by remember { mutableStateOf("") }
+    var bitrate by remember { mutableStateOf("2500") }
 
     Scaffold(
         topBar = {
@@ -23,12 +24,13 @@ fun SettingsScreen(onBack: () -> Unit) {
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            OutlinedTextField(value = rtmpUrl, onValueChange = { rtmpUrl = it },
-                label = { Text("RTMP URL") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = streamKey, onValueChange = { streamKey = it },
-                label = { Text("Stream Key") }, modifier = Modifier.fillMaxWidth())
+            Text("Stream RTMP", style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(value = rtmpUrl, onValueChange = { rtmpUrl = it }, label = { Text("RTMP URL") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = streamKey, onValueChange = { streamKey = it }, label = { Text("Stream Key") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = bitrate, onValueChange = { bitrate = it }, label = { Text("Bitrate (kbps)") }, modifier = Modifier.fillMaxWidth())
+            Button(onClick = {}, modifier = Modifier.fillMaxWidth()) { Text("Guardar") }
         }
     }
 }

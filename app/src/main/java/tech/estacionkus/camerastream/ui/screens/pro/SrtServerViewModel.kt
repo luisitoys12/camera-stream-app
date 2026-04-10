@@ -23,34 +23,20 @@ class SrtServerViewModel @Inject constructor(
     private val srtServer: SrtServerManager,
     private val cloudflared: CloudflaredManager
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(SrtServerUiState(port = srtServer.port))
-    val uiState: StateFlow<SrtServerUiState> = _uiState.asStateFlow()
+    private val _ui = MutableStateFlow(SrtServerUiState(port = srtServer.port))
+    val uiState: StateFlow<SrtServerUiState> = _ui.asStateFlow()
 
     init {
         viewModelScope.launch {
-            combine(
-                srtServer.isRunning,
-                srtServer.clientCount,
-                srtServer.incomingBitrateKbps,
-                cloudflared.isRunning,
-                cloudflared.tunnelUrl
-            ) { running, clients, bitrate, tunnelRunning, tunnelUrl ->
-                _uiState.value = _uiState.value.copy(
-                    serverRunning = running,
-                    clientCount = clients,
-                    incomingBitrateKbps = bitrate,
-                    tunnelRunning = tunnelRunning,
-                    tunnelUrl = tunnelUrl
-                )
+            combine(srtServer.isRunning, srtServer.clientCount, srtServer.incomingBitrateKbps, cloudflared.isRunning, cloudflared.tunnelUrl)
+            { running, clients, bitrate, tRunning, tUrl ->
+                _ui.value = _ui.value.copy(serverRunning = running, clientCount = clients, incomingBitrateKbps = bitrate, tunnelRunning = tRunning, tunnelUrl = tUrl)
             }.collect()
         }
     }
 
     fun startServer() = srtServer.start()
-    fun stopServer() {
-        srtServer.stop()
-        cloudflared.stopTunnel()
-    }
+    fun stopServer() { srtServer.stop(); cloudflared.stopTunnel() }
     fun startTunnel() = cloudflared.startTunnel(srtServer.port)
     fun stopTunnel() = cloudflared.stopTunnel()
 }

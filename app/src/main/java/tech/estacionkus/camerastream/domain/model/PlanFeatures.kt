@@ -16,31 +16,7 @@ data class PlanFeatures(
     val maxResolution: Resolution
 ) {
     companion object {
-        val FREE = PlanFeatures(
-            maxPlatforms = 1,
-            allowSrt = false,
-            allowSrtServer = false,
-            allowCloudflaredTunnel = false,
-            allowScenes = false,
-            allowChromaKey = false,
-            allowManualCamera = false,
-            allowMultiChat = false,
-            allowRecording = true,
-            allowOverlayVideo = false,
-            maxResolution = Resolution(1280, 720)
-        )
-        val PRO = PlanFeatures(
-            maxPlatforms = 5,
-            allowSrt = true,
-            allowSrtServer = true,
-            allowCloudflaredTunnel = true,
-            allowScenes = true,
-            allowChromaKey = true,
-            allowManualCamera = true,
-            allowMultiChat = true,
-            allowRecording = true,
-            allowOverlayVideo = true,
-            maxResolution = Resolution(1920, 1080)
-        )
+        val FREE = PlanFeatures(1, false, false, false, false, false, false, false, true, false, Resolution(1280, 720))
+        val PRO = PlanFeatures(5, true, true, true, true, true, true, true, true, true, Resolution(1920, 1080))
     }
 }

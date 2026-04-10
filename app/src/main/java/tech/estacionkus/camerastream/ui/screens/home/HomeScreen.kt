@@ -21,33 +21,25 @@ fun HomeScreen(
             TopAppBar(
                 title = { Text("CameraStream") },
                 actions = {
-                    IconButton(onClick = onUpgrade) { Icon(Icons.Default.Star, null) }
-                    IconButton(onClick = onOpenSettings) { Icon(Icons.Default.Settings, null) }
+                    IconButton(onClick = onUpgrade) { Icon(Icons.Default.Star, "Pro") }
+                    IconButton(onClick = onOpenSettings) { Icon(Icons.Default.Settings, "Settings") }
                 }
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(
-                onClick = onStartStream,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) {
-                Icon(Icons.Default.PlayArrow, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Iniciar Stream")
+            Button(onClick = onStartStream, modifier = Modifier.fillMaxWidth().height(56.dp)) {
+                Icon(Icons.Default.PlayArrow, null); Spacer(Modifier.width(8.dp)); Text("Iniciar Stream")
             }
-            Spacer(Modifier.height(16.dp))
-            OutlinedButton(
-                onClick = onOpenMedia,
-                modifier = Modifier.fillMaxWidth().height(56.dp)
-            ) {
-                Icon(Icons.Default.Wifi, null)
-                Spacer(Modifier.width(8.dp))
-                Text("Servidor SRT")
+            OutlinedButton(onClick = onOpenMedia, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Icon(Icons.Default.Wifi, null); Spacer(Modifier.width(8.dp)); Text("Servidor SRT (Pro)")
+            }
+            OutlinedButton(onClick = onUpgrade, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Icon(Icons.Default.Star, null); Spacer(Modifier.width(8.dp)); Text("Ver planes Pro")
             }
         }
     }

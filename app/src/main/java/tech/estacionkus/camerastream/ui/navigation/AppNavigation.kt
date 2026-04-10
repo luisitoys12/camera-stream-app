@@ -16,7 +16,7 @@ import tech.estacionkus.camerastream.ui.screens.stream.StreamScreen
 fun AppNavigation() {
     val nav = rememberNavController()
     NavHost(navController = nav, startDestination = "home") {
-        composable("auth") { AuthScreen(onAuthenticated = { nav.navigate("home") }) }
+        composable("auth") { AuthScreen(onAuthenticated = { nav.navigate("home") { popUpTo("auth") { inclusive = true } } }) }
         composable("home") {
             HomeScreen(
                 onStartStream = { nav.navigate("stream") },

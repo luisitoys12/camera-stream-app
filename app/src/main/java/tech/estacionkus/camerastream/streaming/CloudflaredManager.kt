@@ -23,26 +23,20 @@ class CloudflaredManager @Inject constructor(
 
     private val _tunnelUrl = MutableStateFlow<String?>(null)
     val tunnelUrl: StateFlow<String?> = _tunnelUrl.asStateFlow()
-
     private val _isRunning = MutableStateFlow(false)
     val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
 
     private var process: Process? = null
-
-    // cloudflared binary must be bundled in assets/cloudflared-arm64
-    private val binaryFile: File
-        get() = File(context.filesDir, "cloudflared")
+    private val binaryFile get() = File(context.filesDir, "cloudflared")
 
     fun ensureBinary() {
-        if (binaryFile.exists()) return
+        if (binaryFile.exists() && binaryFile.length() > 1000) return
         try {
-            context.assets.open("cloudflared-arm64").use { input ->
-                FileOutputStream(binaryFile).use { output -> input.copyTo(output) }
+            context.assets.open("cloudflared-arm64").use { i ->
+                FileOutputStream(binaryFile).use { o -> i.copyTo(o) }
             }
             binaryFile.setExecutable(true)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract cloudflared binary: ${e.message}")
-        }
+        } catch (e: Exception) { Log.e(TAG, "Binary extract: ${e.message}") }
     }
 
     fun startTunnel(localPort: Int = 9999) {
@@ -50,35 +44,19 @@ class CloudflaredManager @Inject constructor(
         ensureBinary()
         scope.launch {
             try {
-                val cmd = arrayOf(
-                    binaryFile.absolutePath,
-                    "tunnel", "--url", "tcp://localhost:$localPort",
-                    "--no-autoupdate"
-                )
-                process = ProcessBuilder(*cmd)
-                    .redirectErrorStream(true)
-                    .start()
-
+                process = ProcessBuilder(binaryFile.absolutePath, "tunnel", "--url", "tcp://localhost:$localPort", "--no-autoupdate")
+                    .redirectErrorStream(true).start()
                 _isRunning.value = true
                 val reader = BufferedReader(InputStreamReader(process!!.inputStream))
                 var line: String?
                 while (reader.readLine().also { line = it } != null) {
-                    Log.d(TAG, line ?: continue)
-                    // Cloudflared prints the URL in stderr/stdout like:
-                    // "Your quick Tunnel has been created! Visit it at (it may take some time to start up):"
-                    // "https://xxxx.trycloudflare.com"
-                    val match = Regex("https://[a-z0-9-]+\.trycloudflare\.com").find(line ?: "") ?:
-                                Regex("INF \\|(.+trycloudflare\.com)").find(line ?: "")
-                    if (match != null) {
-                        val url = match.value.trim()
-                        // For SRT tunnels, replace https with the TCP address
-                        _tunnelUrl.value = url
-                        Log.i(TAG, "Tunnel URL: $url")
-                    }
+                    val m = Regex("https://[a-z0-9-]+\.trycloudflare\.com").find(line ?: "") ?: continue
+                    _tunnelUrl.value = m.value.trim()
+                    Log.i(TAG, "Tunnel: ${m.value}")
                 }
                 _isRunning.value = false
             } catch (e: Exception) {
-                Log.e(TAG, "Cloudflared error: ${e.message}")
+                Log.e(TAG, "Tunnel error: ${e.message}")
                 _isRunning.value = false
             }
         }

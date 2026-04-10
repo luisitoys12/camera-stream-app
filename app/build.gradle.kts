@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
-    kotlin("plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -37,9 +37,6 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
         }
-        debug {
-            isDebuggable = true
-        }
     }
 
     compileOptions {
@@ -47,33 +44,17 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
+    buildFeatures { compose = true; buildConfig = true }
     packaging {
-        resources {
-            excludes += setOf(
-                "/META-INF/{AL2.0,LGPL2.1}",
-                "META-INF/INDEX.LIST",
-                "META-INF/DEPENDENCIES"
-            )
-        }
+        resources { excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "META-INF/INDEX.LIST", "META-INF/DEPENDENCIES") }
         jniLibs { useLegacyPackaging = true }
     }
-    // Local AARs folder
-    repositories {
-        flatDir { dirs("libs") }
-    }
-    lint {
-        abortOnError = false
-        checkReleaseBuilds = false
-    }
+    lint { abortOnError = false; checkReleaseBuilds = false }
 }
 
 dependencies {
-    // Compose BOM
-    val composeBom = platform("androidx.compose:compose-bom:2025.02.00")
+    // Compose BOM — verified 2026.03.00
+    val composeBom = platform("androidx.compose:compose-bom:2026.03.00")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -87,10 +68,10 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
-    // Hilt
+    // Hilt — verified 2.55 + androidx 1.3.0
     implementation("com.google.dagger:hilt-android:2.55")
     ksp("com.google.dagger:hilt-android-compiler:2.55")
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
 
     // CameraX
     val cameraXVersion = "1.4.2"
@@ -100,16 +81,17 @@ dependencies {
     implementation("androidx.camera:camera-view:$cameraXVersion")
     implementation("androidx.camera:camera-extensions:$cameraXVersion")
 
-    // NodeMedia RTMP — local AAR descargado en CI
-    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
+    // NodeMedia via JitPack — verified 3.2.12
+    implementation("com.github.NodeMedia:NodeMediaClient-Android:3.2.12")
 
-    // SRT — version disponible en Maven Central
-    implementation("io.github.thibaultbee:srtdroid-core:1.6.0")
+    // SRT — verified 1.9.1 on Maven Central
+    implementation("io.github.thibaultbee.srtdroid:srtdroid-core:1.9.1")
+    implementation("io.github.thibaultbee.srtdroid:srtdroid-ktx:1.9.1")
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.3")
 
-    // Supabase
+    // Supabase — verified BOM 3.1.4
     val supabaseVersion = "3.1.4"
     implementation(platform("io.github.jan-tennert.supabase:bom:$supabaseVersion"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
@@ -117,22 +99,25 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:realtime-kt")
     implementation("io.ktor:ktor-client-okhttp:3.1.2")
 
-    // Coil
-    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
-    implementation("io.coil-kt.coil3:coil-gif:3.1.0")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.1.0")
+    // Coil — verified 3.3.0
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation("io.coil-kt.coil3:coil-gif:3.3.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
 
-    // OkHttp
+    // OkHttp WebSocket (chat)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Serialization + Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
-    // QR
+    // ZXing QR
     implementation("com.google.zxing:core:3.5.3")
 
     // Splash + WorkManager
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
+
+    // Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.37.0")
 }
