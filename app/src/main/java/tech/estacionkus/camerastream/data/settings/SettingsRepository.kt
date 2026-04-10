@@ -1,38 +1,59 @@
 package tech.estacionkus.camerastream.data.settings
 
 import android.content.Context
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.io.IOException
+import tech.estacionkus.camerastream.domain.model.StreamTarget
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "stream_settings")
+private val Context.dataStore by preferencesDataStore("cs_settings")
 
 @Singleton
 class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val SETTINGS_KEY = stringPreferencesKey("settings_json")
+    private val store = context.dataStore
 
-    val settings: Flow<StreamSettings> = context.dataStore.data
-        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
-        .map { prefs ->
-            prefs[SETTINGS_KEY]?.let {
-                try { Json.decodeFromString<StreamSettings>(it) } catch (e: Exception) { StreamSettings() }
-            } ?: StreamSettings()
-        }
-
-    suspend fun saveSettings(settings: StreamSettings) {
-        context.dataStore.edit { prefs ->
-            prefs[SETTINGS_KEY] = Json.encodeToString(settings)
-        }
+    companion object {
+        val KEY_RTMP_URL = stringPreferencesKey("rtmp_url")
+        val KEY_STREAM_KEY = stringPreferencesKey("stream_key")
+        val KEY_PLATFORM = stringPreferencesKey("platform")
+        val KEY_BITRATE = intPreferencesKey("bitrate_kbps")
+        val KEY_TARGETS = stringPreferencesKey("stream_targets")
+        val KEY_OVERLAY_URI = stringPreferencesKey("overlay_uri")
+        val KEY_OVERLAY_ENABLED = booleanPreferencesKey("overlay_enabled")
+        val KEY_CHAT_PLATFORM = stringPreferencesKey("chat_platform")
+        val KEY_CHAT_CHANNEL = stringPreferencesKey("chat_channel")
     }
+
+    val rtmpUrl = store.data.map { it[KEY_RTMP_URL] ?: "" }
+    val streamKey = store.data.map { it[KEY_STREAM_KEY] ?: "" }
+    val platform = store.data.map { it[KEY_PLATFORM] ?: "YOUTUBE" }
+    val bitrate = store.data.map { it[KEY_BITRATE] ?: 2500 }
+    val overlayUri = store.data.map { it[KEY_OVERLAY_URI] ?: "" }
+    val overlayEnabled = store.data.map { it[KEY_OVERLAY_ENABLED] ?: false }
+    val chatPlatform = store.data.map { it[KEY_CHAT_PLATFORM] ?: "" }
+    val chatChannel = store.data.map { it[KEY_CHAT_CHANNEL] ?: "" }
+
+    val streamTargets = store.data.map { prefs ->
+        prefs[KEY_TARGETS]?.let {
+            try { Json.decodeFromString<List<StreamTarget>>(it) } catch (e: Exception) { emptyList() }
+        } ?: emptyList()
+    }
+
+    suspend fun setRtmpUrl(v: String) = store.edit { it[KEY_RTMP_URL] = v }
+    suspend fun setStreamKey(v: String) = store.edit { it[KEY_STREAM_KEY] = v }
+    suspend fun setPlatform(v: String) = store.edit { it[KEY_PLATFORM] = v }
+    suspend fun setBitrate(v: Int) = store.edit { it[KEY_BITRATE] = v }
+    suspend fun setOverlayUri(v: String) = store.edit { it[KEY_OVERLAY_URI] = v }
+    suspend fun setOverlayEnabled(v: Boolean) = store.edit { it[KEY_OVERLAY_ENABLED] = v }
+    suspend fun setChatPlatform(v: String) = store.edit { it[KEY_CHAT_PLATFORM] = v }
+    suspend fun setChatChannel(v: String) = store.edit { it[KEY_CHAT_CHANNEL] = v }
+    suspend fun saveTargets(targets: List<StreamTarget>) =
+        store.edit { it[KEY_TARGETS] = Json.encodeToString(targets) }
 }

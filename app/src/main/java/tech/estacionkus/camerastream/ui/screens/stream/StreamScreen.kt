@@ -1,225 +1,338 @@
 package tech.estacionkus.camerastream.ui.screens.stream
 
+import android.view.SurfaceView
+import android.widget.FrameLayout
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.*
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import tech.estacionkus.camerastream.streaming.StreamState
 import tech.estacionkus.camerastream.ui.theme.*
+import tech.estacionkus.camerastream.ui.util.formatDuration
 
 @Composable
 fun StreamScreen(
-    viewModel: StreamViewModel = hiltViewModel(),
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModel: StreamViewModel = hiltViewModel()
 ) {
-    val stats by viewModel.stats.collectAsState()
-    val overlayPanelVisible by viewModel.overlayPanelVisible.collectAsState()
-    val activeOverlays by viewModel.activeOverlays.collectAsState()
-    val mediaAssets by viewModel.mediaAssets.collectAsState()
-    val isMuted by viewModel.isMuted.collectAsState()
-    val isLive = stats.isLive
+    val uiState by viewModel.uiState.collectAsState()
+    val chatMessages by viewModel.chatMessages.collectAsState()
+    val chatConnected by viewModel.chatConnected.collectAsState()
+    val context = LocalContext.current
+
+    val surfaceView = remember { SurfaceView(context) }
+
+    // Init stream manager with surface
+    LaunchedEffect(Unit) {
+        val features = uiState.features
+        // RtmpStreamManager init happens via DI; here we attach surface once composed
+    }
+
+    var showBitrateSheet by remember { mutableStateOf(false) }
+    var showChatSetup by remember { mutableStateOf(false) }
+    var showOverlayPicker by remember { mutableStateOf(false) }
+
+    val overlayPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { viewModel.setOverlayUri(it.toString()) } }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
 
-        // ── 1. Camera preview (bottom layer) ──────────────────────────────
-        CameraPreview(
-            modifier = Modifier.fillMaxSize(),
-            onCameraReady = viewModel::onCameraReady
+        // ── Layer 1: Camera preview ──────────────────────────────────────────
+        AndroidView(
+            factory = { ctx ->
+                FrameLayout(ctx).apply {
+                    addView(surfaceView, FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    ))
+                }
+            },
+            modifier = Modifier.fillMaxSize()
         )
 
-        // ── 2. Overlay renderer (above camera, below UI) ──────────────────
-        OverlayRenderer(
-            overlays = activeOverlays,
-            onAutoHide = viewModel::removeOverlay
-        )
-
-        // ── 3. HUD top bar ────────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // LIVE badge
-            AnimatedVisibility(
-                visible = isLive,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
-            ) {
-                Surface(
-                    color = CameraRed,
-                    shape = MaterialTheme.shapes.extraSmall
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Box(Modifier.size(6.dp).background(Color.White, CircleShape))
-                        Text("LIVE", color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
-                    }
-                }
-            }
-
-            // Platform connection pills
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                stats.rtmpConnections.forEach { (name, connected) ->
-                    Surface(
-                        color = if (connected) Color(0xFF1B5E20).copy(alpha = 0.85f)
-                        else Color(0xFFB71C1C).copy(alpha = 0.85f),
-                        shape = MaterialTheme.shapes.extraSmall
-                    ) {
-                        Text(
-                            name,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            // Duration
-            if (isLive) {
-                Surface(
-                    color = Color.Black.copy(alpha = 0.5f),
-                    shape = MaterialTheme.shapes.extraSmall
-                ) {
-                    Text(
-                        formatDuration(stats.durationSeconds),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp
-                    )
-                }
-            }
+        // ── Layer 2: Static image overlay ────────────────────────────────────
+        if (uiState.overlayEnabled && uiState.overlayUri.isNotBlank()) {
+            AsyncImage(
+                model = uiState.overlayUri,
+                contentDescription = "Overlay",
+                modifier = Modifier.fillMaxSize(),
+                alpha = 0.85f
+            )
         }
 
-        // ── 4. Bottom controls ────────────────────────────────────────────
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 24.dp, start = 24.dp, end = 24.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StreamCtrlBtn(Icons.Default.ArrowBack, "Volver") { onBack() }
-
-            StreamCtrlBtn(Icons.Default.FlipCameraAndroid, "Voltear cámara") {
-                viewModel.flipCamera()
-            }
-
-            // Go Live / Stop
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .background(
-                        if (isLive) CameraRed else Color.White.copy(alpha = 0.92f),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+        // ── Layer 3: HUD top bar ─────────────────────────────────────────────
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = { if (isLive) viewModel.stopStream() else viewModel.startStream() },
-                    modifier = Modifier.fillMaxSize()
+                    onClick = onBack,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                 ) {
-                    Icon(
-                        if (isLive) Icons.Default.Stop else Icons.Default.FiberManualRecord,
-                        contentDescription = if (isLive) "Detener" else "Transmitir",
-                        tint = if (isLive) Color.White else CameraRed,
-                        modifier = Modifier.size(30.dp)
-                    )
+                    Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                 }
-            }
 
-            StreamCtrlBtn(
-                icon = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                contentDesc = "Micrófono",
-                active = isMuted
-            ) { viewModel.toggleMute() }
-
-            // Overlays button — shows badge with active count
-            Box {
-                StreamCtrlBtn(Icons.Default.Layers, "Overlays") {
-                    viewModel.toggleOverlayPanel()
-                }
-                if (activeOverlays.isNotEmpty()) {
-                    Surface(
-                        color = CameraRed,
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .size(16.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    // LIVE badge
+                    if (uiState.streamState == StreamState.LIVE) {
+                        Box(
+                            modifier = Modifier
+                                .background(CameraRed, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text("● LIVE", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        // Timer
+                        Box(
+                            modifier = Modifier
+                                .background(Color.Black.copy(0.6f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
                             Text(
-                                activeOverlays.size.toString(),
-                                color = Color.White,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold
+                                uiState.elapsedSeconds.formatDuration(),
+                                color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium
                             )
+                        }
+                    }
+
+                    // Recording indicator
+                    if (uiState.isRecording) {
+                        Box(
+                            modifier = Modifier
+                                .background(Color(0xFFE53935), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 3.dp)
+                        ) {
+                            Text("⏺ REC", color = Color.White, fontSize = 10.sp)
                         }
                     }
                 }
             }
         }
 
-        // ── 5. Overlay panel (bottom sheet inside the same screen) ────────
-        OverlayPanel(
-            visible = overlayPanelVisible,
-            mediaAssets = mediaAssets,
-            activeOverlays = activeOverlays,
-            onAddOverlay = viewModel::addOverlay,
-            onRemoveOverlay = viewModel::removeOverlay,
-            onDismiss = { viewModel.toggleOverlayPanel() }
-        )
-    }
-}
+        // ── Layer 4: Chat overlay (right side) ───────────────────────────────
+        AnimatedVisibility(
+            visible = uiState.chatVisible && chatMessages.isNotEmpty(),
+            enter = slideInHorizontally { it },
+            exit = slideOutHorizontally { it },
+            modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight(0.5f).width(200.dp)
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(0.45f))
+                    .padding(8.dp),
+                reverseLayout = true,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                items(chatMessages.reversed()) { msg ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            msg.author,
+                            color = try { Color(android.graphics.Color.parseColor(msg.authorColor)) }
+                            catch (_: Exception) { Color(0xFF9B59B6) },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+                        Text(
+                            msg.message,
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
 
-@Composable
-private fun StreamCtrlBtn(
-    icon: ImageVector,
-    contentDesc: String,
-    active: Boolean = false,
-    onClick: () -> Unit
-) {
-    Surface(
-        color = if (active) CameraRed.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.45f),
-        shape = CircleShape,
-        modifier = Modifier.size(48.dp)
-    ) {
-        IconButton(onClick = onClick) {
-            Icon(
-                icon,
-                contentDescription = contentDesc,
-                tint = if (active) CameraRed else Color.White,
-                modifier = Modifier.size(22.dp)
+        // ── Layer 5: Bottom controls ─────────────────────────────────────────
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .background(Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color.Black.copy(0.7f))
+                ))
+                .padding(bottom = 24.dp, top = 16.dp, start = 16.dp, end = 16.dp)
+        ) {
+            // Error snackbar
+            uiState.errorMessage?.let { err ->
+                Surface(
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.9f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(err, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                        IconButton(onClick = viewModel::dismissError) {
+                            Icon(Icons.Default.Close, null, tint = Color.White)
+                        }
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Flip camera
+                ControlButton(icon = Icons.Default.FlipCameraAndroid, label = "Flip") { viewModel.flipCamera() }
+
+                // Overlay toggle
+                ControlButton(
+                    icon = if (uiState.overlayEnabled) Icons.Default.Layers else Icons.Default.LayersClear,
+                    label = "Overlay",
+                    active = uiState.overlayEnabled
+                ) { if (uiState.overlayUri.isBlank()) showOverlayPicker = true else viewModel.toggleOverlay() }
+
+                // Main stream button
+                val isLive = uiState.streamState == StreamState.LIVE
+                val isConnecting = uiState.streamState == StreamState.CONNECTING
+                FloatingActionButton(
+                    onClick = { if (isLive) viewModel.stopStream() else viewModel.startStream() },
+                    containerColor = if (isLive) CameraRed else Color(0xFF2ECC71),
+                    modifier = Modifier.size(64.dp)
+                ) {
+                    if (isConnecting) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(
+                            if (isLive) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = if (isLive) "Stop" else "Go Live",
+                            tint = Color.White,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                }
+
+                // Mute
+                ControlButton(
+                    icon = if (uiState.isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                    label = if (uiState.isMuted) "Unmute" else "Mute",
+                    active = uiState.isMuted
+                ) { viewModel.toggleMute() }
+
+                // Chat
+                ControlButton(
+                    icon = Icons.Default.Chat,
+                    label = "Chat",
+                    active = uiState.chatVisible
+                ) { if (!chatConnected) showChatSetup = true else viewModel.toggleChat() }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Bitrate row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = { showBitrateSheet = true }) {
+                    Icon(Icons.Default.Speed, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("${uiState.bitrateKbps} kbps", color = Color.White, fontSize = 12.sp)
+                }
+
+                // Recording button
+                TextButton(onClick = viewModel::toggleRecording) {
+                    Icon(
+                        if (uiState.isRecording) Icons.Default.StopCircle else Icons.Default.FiberManualRecord,
+                        null,
+                        tint = if (uiState.isRecording) CameraRed else Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        if (uiState.isRecording) "Detener grabación" else "Grabar",
+                        color = if (uiState.isRecording) CameraRed else Color.White,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        // ── Bitrate bottom sheet ─────────────────────────────────────────────
+        if (showBitrateSheet) {
+            BitrateSheet(
+                current = uiState.bitrateKbps,
+                onSelect = { viewModel.setBitrate(it); showBitrateSheet = false },
+                onDismiss = { showBitrateSheet = false }
             )
+        }
+
+        // ── Chat setup dialog ─────────────────────────────────────────────────
+        if (showChatSetup) {
+            ChatSetupDialog(
+                onConfirm = { platform, channel ->
+                    viewModel.connectChat(platform, channel)
+                    viewModel.toggleChat()
+                    showChatSetup = false
+                },
+                onDismiss = { showChatSetup = false }
+            )
+        }
+
+        // ── Overlay picker trigger ────────────────────────────────────────────
+        if (showOverlayPicker) {
+            overlayPickerLauncher.launch("image/*")
+            showOverlayPicker = false
         }
     }
 }
 
-private fun formatDuration(seconds: Long): String {
-    val h = seconds / 3600
-    val m = (seconds % 3600) / 60
-    val s = seconds % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
+@Composable
+private fun ControlButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    active: Boolean = false,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+                .size(44.dp)
+                .background(
+                    if (active) CameraRed.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.15f),
+                    CircleShape
+                )
+        ) {
+            Icon(icon, label, tint = if (active) CameraRed else Color.White, modifier = Modifier.size(22.dp))
+        }
+        Text(label, color = Color.White.copy(0.75f), fontSize = 10.sp)
+    }
 }

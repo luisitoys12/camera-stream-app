@@ -2,12 +2,11 @@ package tech.estacionkus.camerastream.ui.screens.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -16,113 +15,113 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import tech.estacionkus.camerastream.ui.theme.*
 
 @Composable
 fun HomeScreen(
     onStartStream: () -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenMedia: () -> Unit
+    onOpenMedia: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Surface900)
     ) {
-        // Subtle gradient top
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(280.dp)
-                .background(Brush.verticalGradient(
-                    colors = listOf(CameraRed.copy(alpha = 0.08f), Color.Transparent)
-                ))
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Spacer(Modifier.height(48.dp))
-
-            // Logo mark
-            Box(
-                modifier = Modifier
-                    .size(72.dp)
-                    .background(CameraRed.copy(alpha = 0.15f), shape = MaterialTheme.shapes.large),
-                contentAlignment = Alignment.Center
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.RadioButtonChecked,
-                    contentDescription = null,
-                    tint = CameraRed,
-                    modifier = Modifier.size(36.dp)
-                )
+                Column {
+                    Text("CameraStream", style = MaterialTheme.typography.headlineMedium,
+                        color = OnSurface, fontWeight = FontWeight.Bold)
+                    Text("by EstacionKUS", style = MaterialTheme.typography.labelSmall,
+                        color = OnSurfaceMuted, letterSpacing = 1.5.sp)
+                }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Default.Settings, null, tint = OnSurfaceMuted)
+                }
             }
 
-            Spacer(Modifier.height(20.dp))
+            // Plan badge
+            Surface(
+                color = CameraRed.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Verified, null, tint = CameraRed, modifier = Modifier.size(16.dp))
+                    Text(
+                        text = when (uiState.planId) {
+                            "pro" -> "Plan Pro activo"
+                            "starter" -> "Plan Starter activo"
+                            "agency" -> "Plan Agency activo"
+                            else -> "Plan Free"
+                        },
+                        color = CameraRed, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
 
-            Text(
-                "CameraStream",
-                style = MaterialTheme.typography.displaySmall,
-                color = OnSurface
-            )
-            Text(
-                "by EstacionKUS",
-                style = MaterialTheme.typography.labelSmall,
-                color = OnSurfaceMuted,
-                letterSpacing = 2.sp
-            )
-
-            Spacer(Modifier.height(48.dp))
-
-            // Main CTA
+            // Go Live button
             Button(
                 onClick = onStartStream,
-                modifier = Modifier.fillMaxWidth(0.65f).height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = CameraRed),
-                shape = MaterialTheme.shapes.medium
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.FiberManualRecord, contentDescription = null, tint = Color.White)
+                Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(24.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Ir en vivo", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Ir en vivo", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            // Secondary actions
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                QuickActionButton(
-                    icon = Icons.Default.PhotoLibrary,
-                    label = "Medios",
-                    onClick = onOpenMedia
-                )
-                QuickActionButton(
-                    icon = Icons.Default.Settings,
-                    label = "Ajustes",
-                    onClick = onOpenSettings
+            // Quick actions grid
+            Text("Acciones rápidas", style = MaterialTheme.typography.titleSmall, color = OnSurfaceMuted)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickCard("Configurar", Icons.Default.Tune, Modifier.weight(1f), onClick = onOpenSettings)
+                QuickCard("Medios", Icons.Default.VideoLibrary, Modifier.weight(1f), onClick = onOpenMedia)
+                QuickCard(
+                    title = if (uiState.planId == null) "Activar" else "Cuenta",
+                    icon = Icons.Default.CardMembership,
+                    modifier = Modifier.weight(1f),
+                    onClick = viewModel::onAccountTap
                 )
             }
 
-            Spacer(Modifier.height(40.dp))
-
-            // Quick status row
-            val platforms = listOf("YouTube", "Twitch", "Facebook", "Kick", "TikTok")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(platforms) { name ->
-                    Surface(
-                        color = Surface700,
-                        shape = MaterialTheme.shapes.small
+            // Stats (last session)
+            if (uiState.lastSessionDuration > 0) {
+                Surface(
+                    color = Surface700,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceAround
                     ) {
-                        Text(
-                            name,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = OnSurfaceMuted
-                        )
+                        StatItem("Última sesión", uiState.lastSessionDuration.formatDuration())
+                        StatItem("Resolución", uiState.features.maxResolution.label)
+                        StatItem("Plataformas", "${uiState.features.maxPlatforms} máx")
                     }
                 }
             }
@@ -131,14 +130,33 @@ fun HomeScreen(
 }
 
 @Composable
-private fun QuickActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    OutlinedButton(
-        onClick = onClick,
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = OnSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Surface600)
+private fun QuickCard(title: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        color = Surface700,
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier,
+        onClick = onClick
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall)
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(icon, null, tint = CameraRed, modifier = Modifier.size(24.dp))
+            Text(title, fontSize = 12.sp, color = OnSurface)
+        }
     }
+}
+
+@Composable
+private fun StatItem(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontWeight = FontWeight.Bold, color = OnSurface, fontSize = 14.sp)
+        Text(label, fontSize = 10.sp, color = OnSurfaceMuted)
+    }
+}
+
+private fun Long.formatDuration(): String {
+    val h = this / 3600; val m = (this % 3600) / 60; val s = this % 60
+    return if (h > 0) "%02d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
 }
