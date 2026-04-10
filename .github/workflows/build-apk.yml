@@ -20,14 +20,16 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      # Instala Gradle del sistema y genera el wrapper correcto
+      - name: Generate Gradle Wrapper
+        run: |
+          sudo apt-get install -y gradle
+          gradle wrapper --gradle-version=8.11.1 --distribution-type=bin
+          chmod +x gradlew
+          ls -la gradlew gradle/wrapper/
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install Gradle Wrapper
-        run: |
-          sudo apt-get install -y gradle 2>/dev/null || true
-          gradle wrapper --gradle-version=8.11.1 --distribution-type=bin || true
-          chmod +x gradlew
 
       - name: Cache Gradle
         uses: actions/cache@v4
@@ -35,17 +37,17 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
-          restore-keys: gradle-${{ runner.os }}-
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
+          restore-keys: ${{ runner.os }}-gradle-
 
       - name: Download NodeMedia AAR
         run: |
           mkdir -p app/libs
           curl -fL "https://github.com/NodeMedia/NodeMediaClient-Android/releases/download/2.9.2/NodeMediaClient.aar" \
-            -o app/libs/NodeMediaClient.aar || \
+            -o app/libs/NodeMediaClient.aar 2>/dev/null || \
           curl -fL "https://github.com/NodeMedia/NodeMediaClient-Android/releases/download/2.8.0/NodeMediaClient.aar" \
-            -o app/libs/NodeMediaClient.aar || \
-          echo "Warning: NodeMedia AAR not downloaded, using stub"
+            -o app/libs/NodeMediaClient.aar 2>/dev/null || \
+          echo "NodeMedia no disponible, usando modo stub"
 
       - name: Download cloudflared arm64
         run: |
@@ -53,11 +55,13 @@ jobs:
           curl -fL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64" \
             -o app/src/main/assets/cloudflared-arm64
           chmod +x app/src/main/assets/cloudflared-arm64
+          echo "cloudflared descargado: $(ls -lh app/src/main/assets/cloudflared-arm64)"
 
       - name: Generate Keystore
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > app/keystore.jks
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > app/keystore.jks
+            echo "Keystore desde secret"
           else
             keytool -genkeypair -v \
               -keystore app/keystore.jks \
@@ -67,26 +71,33 @@ jobs:
               -storepass camerastream123 \
               -keypass camerastream123 \
               -dname "CN=CameraStream,OU=Dev,O=EstacionKUS,L=Irapuato,S=GTO,C=MX"
+            echo "Keystore autogenerado"
           fi
         env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Build Release APK
-        run: ./gradlew assembleRelease --no-daemon --stacktrace --warning-mode=all
+        run: |
+          ./gradlew assembleRelease \
+            --no-daemon \
+            --stacktrace \
+            --info \
+            -Pandroid.useAndroidX=true
         env:
           KEYSTORE_FILE: app/keystore.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'camerastream123' }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'camerastream' }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'camerastream123' }}
 
-      - name: Rename & Upload APK
+      - name: Find and rename APK
         id: apk
         run: |
-          APK_SRC=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
-          APK_NAME="CameraStream-v1.1.0-$(date +'%Y%m%d-%H%M').apk"
-          cp "$APK_SRC" "/tmp/${APK_NAME}"
-          echo "path=/tmp/${APK_NAME}" >> $GITHUB_OUTPUT
-          echo "name=${APK_NAME}" >> $GITHUB_OUTPUT
+          APK=$(find app/build/outputs/apk/release -name '*.apk' | head -1)
+          NAME="CameraStream-v1.1.0-$(date +'%Y%m%d-%H%M').apk"
+          cp "$APK" "/tmp/$NAME"
+          echo "path=/tmp/$NAME" >> $GITHUB_OUTPUT
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "APK: $NAME"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -97,6 +108,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "## ✅ APK listo" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ APK listo para descargar" >> $GITHUB_STEP_SUMMARY
           echo "**Archivo:** ${{ steps.apk.outputs.name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Descarga:** este run → Artifacts → CameraStream-APK" >> $GITHUB_STEP_SUMMARY
