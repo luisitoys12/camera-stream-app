@@ -20,17 +20,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Bootstrap gradle-wrapper.jar
-        run: |
-          curl -fsSL \
-            "https://services.gradle.org/distributions/gradle-8.11.1-bin.zip" \
-            -o /tmp/gradle.zip
-          unzip -p /tmp/gradle.zip "gradle-8.11.1/lib/gradle-wrapper.jar" \
-            > gradle/wrapper/gradle-wrapper.jar 2>/dev/null || \
-          unzip /tmp/gradle.zip -d /tmp/gradle-dist && \
-          find /tmp/gradle-dist -name "gradle-wrapper.jar" -exec cp {} gradle/wrapper/gradle-wrapper.jar \;
-          chmod +x gradlew
-          echo "gradle-wrapper.jar size: $(wc -c < gradle/wrapper/gradle-wrapper.jar) bytes"
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - uses: gradle/actions/setup-gradle@v3
         with:
@@ -62,17 +53,8 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Bootstrap gradle-wrapper.jar
-        run: |
-          curl -fsSL \
-            "https://services.gradle.org/distributions/gradle-8.11.1-bin.zip" \
-            -o /tmp/gradle.zip
-          unzip -p /tmp/gradle.zip "gradle-8.11.1/lib/gradle-wrapper.jar" \
-            > gradle/wrapper/gradle-wrapper.jar 2>/dev/null || \
-          unzip /tmp/gradle.zip -d /tmp/gradle-dist && \
-          find /tmp/gradle-dist -name "gradle-wrapper.jar" -exec cp {} gradle/wrapper/gradle-wrapper.jar \;
-          chmod +x gradlew
-          echo "gradle-wrapper.jar size: $(wc -c < gradle/wrapper/gradle-wrapper.jar) bytes"
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - uses: gradle/actions/setup-gradle@v3
         with:
