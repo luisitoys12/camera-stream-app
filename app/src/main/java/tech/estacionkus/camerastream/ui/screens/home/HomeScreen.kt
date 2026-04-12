@@ -35,6 +35,7 @@ fun HomeScreen(
     onOpenManualCam: () -> Unit = {},
     onOpenFilters: () -> Unit = {},
     onOpenRadio: () -> Unit = {},
+    onOpenEditor: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val planName by viewModel.planName.collectAsState()
@@ -136,15 +137,19 @@ fun HomeScreen(
             Text("New in v3", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF64B5F6), modifier = Modifier.padding(top = 4.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FeatureCard("Editor", Icons.Default.MovieCreation, Color(0xFF00BCD4), Modifier.weight(1f), onOpenEditor)
                 FeatureCard("Filters", Icons.Default.FilterVintage, Color(0xFFAB47BC), Modifier.weight(1f), onOpenFilters)
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FeatureCard("Radio", Icons.Default.Radio, Color(0xFFE53935), Modifier.weight(1f), onOpenRadio)
+                FeatureCard("SRT Server", Icons.Default.Wifi, Color(0xFF607D8B), Modifier.weight(1f), onOpenMedia)
             }
 
             Text("Pro Features", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White, modifier = Modifier.padding(top = 4.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureCard("SRT Server", Icons.Default.Wifi, Color(0xFF607D8B), Modifier.weight(1f), onOpenMedia)
                 FeatureCard("Camera Pro", Icons.Default.CameraAlt, Color(0xFF795548), Modifier.weight(1f), onOpenManualCam)
+                Spacer(Modifier.weight(1f))
             }
 
             OutlinedButton(

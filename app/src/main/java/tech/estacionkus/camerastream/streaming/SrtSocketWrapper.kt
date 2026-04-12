@@ -3,18 +3,19 @@ package tech.estacionkus.camerastream.streaming
 import java.net.InetSocketAddress
 
 /**
- * Abstracción sobre el socket SRT real (srtdroid JNI).
- * Permite unit tests JVM puros sin cargar la librería nativa.
+ * Abstraction over the real SRT socket (srtdroid JNI).
+ * Allows pure JVM unit tests without loading the native library.
  *
- * En producción usa [real()]. En tests usa [noop()].
+ * Production uses [real()]. Tests use [noop()].
  */
 interface SrtSocketWrapper {
 
-    data class Stats(val rttMs: Int, val lostPkts: Int)
+    data class Stats(val rttMs: Int, val lostPkts: Int, val bandwidth: Long = 0)
 
     fun startup()
     fun configure(config: SrtCallerManager.SrtConfig)
     fun connect(address: InetSocketAddress)
+    fun send(data: ByteArray, offset: Int = 0, len: Int = data.size): Int
     fun recv(buf: ByteArray): Int
     fun readStats(): Stats?
     fun close()
@@ -22,14 +23,15 @@ interface SrtSocketWrapper {
     fun log(message: String)
 
     companion object {
-        /** Implementación real con srtdroid — sólo se carga en dispositivo/emulador. */
+        /** Real implementation with srtdroid — only loads on device/emulator. */
         fun real(): SrtSocketWrapper = RealSrtSocketWrapper()
 
-        /** Implementación vacía para unit tests JVM (no carga JNI). */
+        /** Empty implementation for JVM unit tests (no JNI loading). */
         fun noop(): SrtSocketWrapper = object : SrtSocketWrapper {
             override fun startup() {}
             override fun configure(config: SrtCallerManager.SrtConfig) {}
             override fun connect(address: InetSocketAddress) {}
+            override fun send(data: ByteArray, offset: Int, len: Int): Int = len
             override fun recv(buf: ByteArray): Int = -1
             override fun readStats(): Stats? = null
             override fun close() {}

@@ -16,7 +16,7 @@ internal class RealSrtSocketWrapper : SrtSocketWrapper {
     override fun configure(config: SrtCallerManager.SrtConfig) {
         socket = SrtSocket().apply {
             setSockFlag(SockOpt.TRANSTYPE, Transtype.LIVE)
-            setSockFlag(SockOpt.RCVSYN, false)
+            setSockFlag(SockOpt.RCVSYN, true)
             if (config.latencyMs > 0) setSockFlag(SockOpt.LATENCY, config.latencyMs)
             if (config.streamId.isNotBlank()) setSockFlag(SockOpt.STREAMID, config.streamId)
             if (config.passphrase.isNotBlank()) {
@@ -33,12 +33,25 @@ internal class RealSrtSocketWrapper : SrtSocketWrapper {
         Log.i(TAG, "SRT connected to ${address.hostName}:${address.port}")
     }
 
+    override fun send(data: ByteArray, offset: Int, len: Int): Int {
+        return try {
+            socket?.send(data, offset, len) ?: -1
+        } catch (e: Exception) {
+            Log.e(TAG, "SRT send error: ${e.message}")
+            -1
+        }
+    }
+
     override fun recv(buf: ByteArray): Int = socket?.recv(buf) ?: -1
 
     override fun readStats(): SrtSocketWrapper.Stats? {
         return try {
             socket?.bistats(clear = true, instantaneous = false)?.let {
-                SrtSocketWrapper.Stats(rttMs = it.msRTT.toInt(), lostPkts = it.pktRcvLoss)
+                SrtSocketWrapper.Stats(
+                    rttMs = it.msRTT.toInt(),
+                    lostPkts = it.pktRcvLoss,
+                    bandwidth = it.mbpsBandwidth.toLong()
+                )
             }
         } catch (_: Exception) { null }
     }

@@ -1,5 +1,6 @@
 package tech.estacionkus.camerastream.ui.screens.radio
 
+import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -18,12 +19,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import tech.estacionkus.camerastream.streaming.StreamState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,14 @@ fun RadioBroadcastScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isAgency by viewModel.isAgency.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.dismissError()
+        }
+    }
 
     if (!isAgency) {
         // Agency lock screen
@@ -87,6 +97,21 @@ fun RadioBroadcastScreen(
                         Icon(Icons.Default.Radio, null, tint = Color(0xFFE53935))
                         Spacer(Modifier.width(8.dp))
                         Text("Radio Broadcast")
+                        if (uiState.connectionState == StreamState.LIVE) {
+                            Spacer(Modifier.width(8.dp))
+                            Surface(
+                                color = Color(0xFF4CAF50),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    "LIVE",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -112,6 +137,17 @@ fun RadioBroadcastScreen(
                 onToggle = { viewModel.toggleBroadcast() }
             )
 
+            // Connection status
+            if (uiState.connectionState == StreamState.CONNECTING) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Text("Connecting...", color = Color(0xFFFFC107))
+                }
+            }
+
             // VU Meters
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -119,11 +155,182 @@ fun RadioBroadcastScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Audio Levels", color = Color.White, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Audio Levels", color = Color.White, fontWeight = FontWeight.Bold)
+                        // Mute button
+                        IconButton(
+                            onClick = { viewModel.toggleMute() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                if (uiState.isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                                "Mute",
+                                tint = if (uiState.isMuted) Color(0xFFE53935) else Color(0xFF4CAF50)
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(12.dp))
                     VuMeter("L", uiState.audioLevelLeft)
                     Spacer(Modifier.height(8.dp))
                     VuMeter("R", uiState.audioLevelRight)
+                }
+            }
+
+            // Audio Effects
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Audio Effects", fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(12.dp))
+
+                    // Gain control
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Gain: ${uiState.gainDb.toInt()} dB", modifier = Modifier.width(100.dp))
+                        Slider(
+                            value = uiState.gainDb,
+                            onValueChange = { viewModel.setGain(it) },
+                            valueRange = -12f..12f,
+                            modifier = Modifier.weight(1f),
+                            colors = SliderDefaults.colors(
+                                thumbColor = Color(0xFF2196F3),
+                                activeTrackColor = Color(0xFF2196F3)
+                            )
+                        )
+                    }
+
+                    // Noise gate
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Noise Suppressor")
+                            Text("Reduce background noise", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = uiState.noiseGateEnabled,
+                            onCheckedChange = { viewModel.toggleNoiseGate() }
+                        )
+                    }
+
+                    // Auto gain control
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("Auto Gain Control")
+                            Text("Normalize volume levels", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(
+                            checked = uiState.autoGainEnabled,
+                            onCheckedChange = { viewModel.toggleAutoGain() }
+                        )
+                    }
+                }
+            }
+
+            // Audio Bitrate selector
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Audio Quality", fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(64 to "64k", 128 to "128k", 192 to "192k", 320 to "320k").forEach { (kbps, label) ->
+                            FilterChip(
+                                selected = uiState.audioBitrateKbps == kbps,
+                                onClick = { viewModel.setAudioBitrate(kbps) },
+                                label = { Text(label) },
+                                enabled = !uiState.isLive,
+                                leadingIcon = {
+                                    if (uiState.audioBitrateKbps == kbps)
+                                        Icon(Icons.Default.Check, null, Modifier.size(16.dp))
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Protocol selector (RTMP / SRT)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Protocol", fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = uiState.protocol == RadioProtocol.RTMP,
+                            onClick = { viewModel.setProtocol(RadioProtocol.RTMP) },
+                            label = { Text("RTMP") },
+                            enabled = !uiState.isLive,
+                            leadingIcon = {
+                                if (uiState.protocol == RadioProtocol.RTMP)
+                                    Icon(Icons.Default.Check, null, Modifier.size(16.dp))
+                            }
+                        )
+                        FilterChip(
+                            selected = uiState.protocol == RadioProtocol.SRT,
+                            onClick = { viewModel.setProtocol(RadioProtocol.SRT) },
+                            label = { Text("SRT") },
+                            enabled = !uiState.isLive,
+                            leadingIcon = {
+                                if (uiState.protocol == RadioProtocol.SRT)
+                                    Icon(Icons.Default.Check, null, Modifier.size(16.dp))
+                            }
+                        )
+                    }
+
+                    // SRT UDP tunnel info
+                    if (uiState.protocol == RadioProtocol.SRT) {
+                        Spacer(Modifier.height(8.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFFFF3E0)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Info, null, tint = Color(0xFFE65100), modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("SRT requires UDP", fontWeight = FontWeight.Bold, color = Color(0xFFE65100), fontSize = 13.sp)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "Cloudflare tunnels do NOT support UDP. For remote SRT access use:",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF4E342E)
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text("• Pinggy (\$2.50/mo) — supports UDP tunnels", fontSize = 11.sp, color = Color(0xFF4E342E))
+                                Text("• Playit.gg (free) — free UDP tunnels", fontSize = 11.sp, color = Color(0xFF4E342E))
+                                Text("• VPS with public IP (DigitalOcean, Hetzner)", fontSize = 11.sp, color = Color(0xFF4E342E))
+                            }
+                        }
+                    }
                 }
             }
 
@@ -219,19 +426,33 @@ fun RadioBroadcastScreen(
                     OutlinedTextField(
                         value = uiState.rtmpUrl,
                         onValueChange = { viewModel.setRtmpUrl(it) },
-                        label = { Text("RTMP URL") },
+                        label = {
+                            Text(
+                                if (uiState.protocol == RadioProtocol.SRT) "SRT URL"
+                                else "RTMP URL"
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        placeholder = { Text("rtmp://your-server/radio") }
+                        placeholder = {
+                            Text(
+                                if (uiState.protocol == RadioProtocol.SRT) "srt://host:port?streamid=X&latency=200"
+                                else "rtmp://your-server/radio"
+                            )
+                        },
+                        enabled = !uiState.isLive
                     )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = uiState.streamKey,
-                        onValueChange = { viewModel.setStreamKey(it) },
-                        label = { Text("Stream Key") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                    if (uiState.protocol == RadioProtocol.RTMP) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = uiState.streamKey,
+                            onValueChange = { viewModel.setStreamKey(it) },
+                            label = { Text("Stream Key") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = !uiState.isLive
+                        )
+                    }
                 }
             }
 
@@ -292,10 +513,8 @@ private fun OnAirButton(isLive: Boolean, onToggle: () -> Unit) {
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .padding(vertical = 8.dp)
+        modifier = Modifier.padding(vertical = 8.dp)
     ) {
-        // Glow ring
         if (isLive) {
             Box(
                 modifier = Modifier
@@ -305,7 +524,6 @@ private fun OnAirButton(isLive: Boolean, onToggle: () -> Unit) {
                     .background(Color(0xFFE53935).copy(alpha = glowAlpha * 0.3f))
             )
         }
-        // Button
         Button(
             onClick = onToggle,
             modifier = Modifier
@@ -371,10 +589,12 @@ private fun VuMeter(channel: String, level: Float) {
 }
 
 enum class RadioMode { AUDIO_ONLY, VISUAL_RADIO }
+enum class RadioProtocol { RTMP, SRT }
 
 data class RadioUiState(
     val isLive: Boolean = false,
     val mode: RadioMode = RadioMode.AUDIO_ONLY,
+    val protocol: RadioProtocol = RadioProtocol.RTMP,
     val nowPlaying: String = "",
     val currentShow: String = "",
     val nextShow: String = "",
@@ -382,5 +602,14 @@ data class RadioUiState(
     val streamKey: String = "",
     val audioLevelLeft: Float = 0f,
     val audioLevelRight: Float = 0f,
-    val listenerCount: Int = 0
+    val listenerCount: Int = 0,
+    val connectionState: StreamState = StreamState.IDLE,
+    val isMuted: Boolean = false,
+    val audioBitrateKbps: Int = 128,
+    val sampleRate: Int = 44100,
+    val stereo: Boolean = true,
+    val gainDb: Float = 0f,
+    val noiseGateEnabled: Boolean = false,
+    val autoGainEnabled: Boolean = false,
+    val errorMessage: String? = null
 )

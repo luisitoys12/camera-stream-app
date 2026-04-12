@@ -211,6 +211,28 @@ fun SrtServerScreen(
                 }
             }
 
+            // SRT UDP Tunnel Warning
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Warning, null, tint = Color(0xFFE65100), modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("SRT requires UDP", fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                    }
+                    Text(
+                        "Cloudflare tunnels do NOT support UDP, which SRT needs. For remote SRT access, use one of these alternatives:",
+                        fontSize = 13.sp, color = Color(0xFF4E342E)
+                    )
+                    Text("• Pinggy (\$2.50/mo) — UDP tunnel support", fontSize = 12.sp, color = Color(0xFF4E342E))
+                    Text("• Playit.gg (free) — Free UDP tunnels for gaming/streaming", fontSize = 12.sp, color = Color(0xFF4E342E))
+                    Text("• VPS with public IP (DigitalOcean, Hetzner, Linode)", fontSize = 12.sp, color = Color(0xFF4E342E))
+                    Text("• Port forwarding on your router (port ${ui.port} UDP)", fontSize = 12.sp, color = Color(0xFF4E342E))
+                }
+            }
+
             // Instructions
             Card(
                 colors = CardDefaults.cardColors(
@@ -223,13 +245,7 @@ fun SrtServerScreen(
                     Text("1. Start the SRT server above", fontSize = 13.sp)
                     Text("2. On OBS/VLC: Settings > Stream > Custom", fontSize = 13.sp)
                     Text("3. Paste the Local URL (same network) or Public URL", fontSize = 13.sp)
-                    Text("4. For remote access: set up port forwarding on port ${ui.port}", fontSize = 13.sp)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Tip: For public access without port forwarding, use a Pinggy or ngrok UDP tunnel externally.",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text("4. For remote access: use a UDP tunnel or port forwarding on port ${ui.port}", fontSize = 13.sp)
                 }
             }
 

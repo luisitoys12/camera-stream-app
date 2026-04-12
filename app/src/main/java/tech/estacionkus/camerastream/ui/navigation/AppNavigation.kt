@@ -22,6 +22,7 @@ import tech.estacionkus.camerastream.ui.screens.onboarding.OnboardingScreen
 import tech.estacionkus.camerastream.ui.screens.pro.ManualCameraScreen
 import tech.estacionkus.camerastream.ui.screens.pro.SrtServerScreen
 import tech.estacionkus.camerastream.ui.screens.pro.UpgradeScreen
+import tech.estacionkus.camerastream.ui.screens.editor.VideoEditorScreen
 import tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastScreen
 import tech.estacionkus.camerastream.ui.screens.scenes.SceneManagerScreen
 import tech.estacionkus.camerastream.ui.screens.settings.SettingsScreen
@@ -122,7 +123,8 @@ fun AppNavigation(showOnboarding: Boolean = false) {
                     onOpenGuest = { nav.navigate("guest") },
                     onOpenManualCam = { nav.navigate("manual_cam") },
                     onOpenFilters = { nav.navigate("filters") },
-                    onOpenRadio = { nav.navigate("radio") }
+                    onOpenRadio = { nav.navigate("radio") },
+                    onOpenEditor = { nav.navigate("editor") }
                 )
             }
             composable("stream") { StreamScreen(onBack = { nav.popBackStack() }) }
@@ -147,6 +149,9 @@ fun AppNavigation(showOnboarding: Boolean = false) {
                     onBack = { nav.popBackStack() },
                     onUpgrade = { nav.navigate("upgrade") }
                 )
+            }
+            composable("editor") {
+                VideoEditorScreen(onBack = { nav.popBackStack() })
             }
         }
     }

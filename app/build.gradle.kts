@@ -133,6 +133,11 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.6.0")
     implementation("androidx.media3:media3-exoplayer-rtsp:1.6.0")
 
+    // Media3 Transformer for video editing/export
+    implementation("androidx.media3:media3-transformer:1.6.0")
+    implementation("androidx.media3:media3-effect:1.6.0")
+    implementation("androidx.media3:media3-common:1.6.0")
+
     // Browser for Stripe checkout & OAuth
     implementation("androidx.browser:browser:1.8.0")
 
