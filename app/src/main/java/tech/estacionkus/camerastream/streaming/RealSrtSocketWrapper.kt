@@ -7,15 +7,11 @@ import io.github.thibaultbee.srtdroid.core.enums.Transtype
 import io.github.thibaultbee.srtdroid.core.models.SrtSocket
 import java.net.InetSocketAddress
 
-/**
- * Implementación real de SrtSocketWrapper usando srtdroid JNI.
- * SOLO se instancia en runtime Android — nunca en unit tests JVM.
- */
 internal class RealSrtSocketWrapper : SrtSocketWrapper {
     private val TAG = "SrtCallerManager"
     private var socket: SrtSocket? = null
 
-    override fun startup() = Srt.startUp()
+    override fun startup(): Unit { Srt.startUp() }
 
     override fun configure(config: SrtCallerManager.SrtConfig) {
         socket = SrtSocket().apply {
@@ -41,7 +37,7 @@ internal class RealSrtSocketWrapper : SrtSocketWrapper {
 
     override fun readStats(): SrtSocketWrapper.Stats? {
         return try {
-            socket?.bistats(clear = true)?.let {
+            socket?.bistats(clear = true, instantaneous = false)?.let {
                 SrtSocketWrapper.Stats(rttMs = it.msRTT.toInt(), lostPkts = it.pktRcvLoss)
             }
         } catch (_: Exception) { null }
@@ -52,9 +48,9 @@ internal class RealSrtSocketWrapper : SrtSocketWrapper {
         socket = null
     }
 
-    override fun cleanup() {
+    override fun cleanup(): Unit {
         try { Srt.cleanUp() } catch (_: Exception) {}
     }
 
-    override fun log(message: String) = Log.e(TAG, message)
+    override fun log(message: String): Unit { Log.e(TAG, message) }
 }

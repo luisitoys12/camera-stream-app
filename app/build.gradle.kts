@@ -128,6 +128,13 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.google.accompanist:accompanist-permissions:0.37.0")
 
+    // Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
+
+    // Compose animation
+    implementation("androidx.compose.animation:animation")
+    implementation("androidx.compose.animation:animation-graphics")
+
     // Pure JVM unit tests — NO Hilt, NO Android deps
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")

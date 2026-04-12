@@ -13,26 +13,37 @@ import androidx.core.content.ContextCompat
 @Composable
 fun CameraPreview(
     modifier: Modifier = Modifier,
+    isFrontCamera: Boolean = false,
     onCameraReady: ((CameraControl) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context).apply {
-        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-        scaleType = PreviewView.ScaleType.FILL_CENTER
-    }}
+    val previewView = remember {
+        PreviewView(context).apply {
+            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+            scaleType = PreviewView.ScaleType.FILL_CENTER
+        }
+    }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isFrontCamera) {
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
             val provider = future.get()
-            val preview = Preview.Builder().build()
-                .also { it.setSurfaceProvider(previewView.surfaceProvider) }
+            val preview = Preview.Builder()
+                .build()
+                .also { it.surfaceProvider = previewView.surfaceProvider }
+
+            val cameraSelector = if (isFrontCamera) {
+                CameraSelector.DEFAULT_FRONT_CAMERA
+            } else {
+                CameraSelector.DEFAULT_BACK_CAMERA
+            }
+
             try {
                 provider.unbindAll()
                 val camera = provider.bindToLifecycle(
                     lifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    cameraSelector,
                     preview
                 )
                 onCameraReady?.invoke(camera.cameraControl)

@@ -14,6 +14,9 @@ data class SettingsUiState(
     val rtmpUrl: String = "",
     val streamKey: String = "",
     val bitrateKbps: Int = 2500,
+    val fps: Int = 30,
+    val resolution: String = "720p",
+    val audioBitrateKbps: Int = 128,
     val saved: Boolean = false
 )
 
@@ -26,24 +29,51 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            combine(repo.platform, repo.rtmpUrl, repo.streamKey, repo.bitrate) { p, url, key, b ->
-                _uiState.value = _uiState.value.copy(platform = p, rtmpUrl = url, streamKey = key, bitrateKbps = b)
+            combine(
+                repo.platform,
+                repo.rtmpUrl,
+                repo.streamKey,
+                repo.bitrate,
+                repo.fps,
+                repo.resolution
+            ) { values ->
+                _uiState.update { it.copy(
+                    platform = values[0] as String,
+                    rtmpUrl = values[1] as String,
+                    streamKey = values[2] as String,
+                    bitrateKbps = values[3] as Int,
+                    fps = values[4] as Int,
+                    resolution = values[5] as String
+                ) }
             }.collect()
+        }
+
+        viewModelScope.launch {
+            repo.audioBitrate.collect { abr ->
+                _uiState.update { it.copy(audioBitrateKbps = abr) }
+            }
         }
     }
 
     fun setPlatform(p: Platform) {
-        _uiState.value = _uiState.value.copy(platform = p.displayName, rtmpUrl = p.rtmpBase)
+        _uiState.update { it.copy(platform = p.displayName, rtmpUrl = p.rtmpBase) }
     }
-    fun setRtmpUrl(v: String) { _uiState.value = _uiState.value.copy(rtmpUrl = v) }
-    fun setStreamKey(v: String) { _uiState.value = _uiState.value.copy(streamKey = v) }
-    fun setBitrate(v: Int) { _uiState.value = _uiState.value.copy(bitrateKbps = v) }
+    fun setRtmpUrl(v: String) { _uiState.update { it.copy(rtmpUrl = v, saved = false) } }
+    fun setStreamKey(v: String) { _uiState.update { it.copy(streamKey = v, saved = false) } }
+    fun setBitrate(v: Int) { _uiState.update { it.copy(bitrateKbps = v, saved = false) } }
+    fun setFps(v: Int) { _uiState.update { it.copy(fps = v, saved = false) } }
+    fun setResolution(v: String) { _uiState.update { it.copy(resolution = v, saved = false) } }
+    fun setAudioBitrate(v: Int) { _uiState.update { it.copy(audioBitrateKbps = v, saved = false) } }
 
     fun save() = viewModelScope.launch {
-        repo.setRtmpUrl(_uiState.value.rtmpUrl)
-        repo.setStreamKey(_uiState.value.streamKey)
-        repo.setPlatform(_uiState.value.platform)
-        repo.setBitrate(_uiState.value.bitrateKbps)
-        _uiState.value = _uiState.value.copy(saved = true)
+        val state = _uiState.value
+        repo.setRtmpUrl(state.rtmpUrl)
+        repo.setStreamKey(state.streamKey)
+        repo.setPlatform(state.platform)
+        repo.setBitrate(state.bitrateKbps)
+        repo.setFps(state.fps)
+        repo.setResolution(state.resolution)
+        repo.setAudioBitrate(state.audioBitrateKbps)
+        _uiState.update { it.copy(saved = true) }
     }
 }

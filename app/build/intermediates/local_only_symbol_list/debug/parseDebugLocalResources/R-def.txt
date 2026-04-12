@@ -1,0 +1,9 @@
+R_DEF: Internal format may change without notice
+local
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string channel_stream_desc
+string channel_stream_name
+style Theme.CameraStream
+style Theme.CameraStream.SplashScreen

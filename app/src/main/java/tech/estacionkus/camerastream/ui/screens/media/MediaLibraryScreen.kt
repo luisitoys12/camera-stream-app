@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import tech.estacionkus.camerastream.data.media.MediaAsset
 import tech.estacionkus.camerastream.data.media.MediaAssetType
 import tech.estacionkus.camerastream.data.media.OverlayCategory
@@ -194,7 +194,7 @@ private fun MediaAssetCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .background(Brush = null, color = Color.Black.copy(alpha = 0.55f))
+                .background(Color.Black.copy(alpha = 0.55f))
         ) {
             Text(
                 asset.name,

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CameraStream Pro</string>
+    <string name="channel_stream_desc">Notificacion activa mientras transmites</string>
+    <string name="channel_stream_name">Stream en vivo</string>
+    <style name="Theme.CameraStream" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+    </style>
+    <style name="Theme.CameraStream.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.CameraStream</item>
+    </style>
+</resources>

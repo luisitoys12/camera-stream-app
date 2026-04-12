@@ -1,0 +1,42 @@
+[
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "tech.estacionkus.camerastream.app-debug-81:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "tech.estacionkus.camerastream.app-main-83:/mipmap-xxhdpi/ic_launcher.png"
+    }
+]

@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import tech.estacionkus.camerastream.streaming.SportsModeManager
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun SportsStreamScreen(
     onBack: () -> Unit,

@@ -1,10 +1,11 @@
 package tech.estacionkus.camerastream.data.auth
 
-import io.github.jan.supabase.functions.functions
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,12 +41,12 @@ data class CouponRedeemResult(
 class LicenseRepository @Inject constructor(
     private val authRepository: AuthRepository
 ) {
-    private val functions = Supabase.client.functions
+    private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun verifyLicense(): LicenseStatus {
         return try {
-            val response = functions.invoke("verify-license")
-            Json { ignoreUnknownKeys = true }.decodeFromString(response.bodyAsText())
+            val result = Supabase.client.postgrest.rpc("verify_license")
+            json.decodeFromString(result.data)
         } catch (e: Exception) {
             LicenseStatus(licensed = false, message = e.message)
         }
@@ -53,10 +54,11 @@ class LicenseRepository @Inject constructor(
 
     suspend fun redeemCoupon(code: String): CouponRedeemResult {
         return try {
-            val response = functions.invoke("redeem-coupon") {
-                body = "{\"code\":\"${code.trim().uppercase()}\"}"
+            val params = buildJsonObject {
+                put("code", code.trim().uppercase())
             }
-            Json { ignoreUnknownKeys = true }.decodeFromString(response.bodyAsText())
+            val result = Supabase.client.postgrest.rpc("redeem_coupon", params)
+            json.decodeFromString(result.data)
         } catch (e: Exception) {
             CouponRedeemResult(error = e.message)
         }

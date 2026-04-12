@@ -40,7 +40,8 @@ class SrtServerManager @Inject constructor() {
                 _isRunning.value = true
                 Log.d(TAG, "SRT server listening :$port")
                 while (isActive) {
-                    val (client, _) = server.accept()
+                    val result = server.accept()
+                    val client = result.first
                     _clientCount.value++
                     launch { handleClient(client) }
                 }

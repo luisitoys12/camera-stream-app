@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import tech.estacionkus.camerastream.billing.BillingManager
+import tech.estacionkus.camerastream.data.settings.SettingsRepository
 import tech.estacionkus.camerastream.domain.FeatureGate
 import tech.estacionkus.camerastream.domain.SceneManager
 import tech.estacionkus.camerastream.streaming.*
@@ -23,4 +25,13 @@ object AppModule {
     @Provides @Singleton fun provideMultiChat() = MultiChatManager()
     @Provides @Singleton fun provideSceneManager() = SceneManager()
     @Provides @Singleton fun provideFeatureGate() = FeatureGate()
+    @Provides @Singleton fun provideChatManager() = ChatManager()
+    @Provides @Singleton fun provideRecordingManager(@ApplicationContext c: Context) = RecordingManager(c)
+    @Provides @Singleton fun provideAdaptiveBitrate(@ApplicationContext c: Context, rtmp: RtmpStreamManager) = AdaptiveBitrateController(c, rtmp)
+    @Provides @Singleton fun provideSettingsRepo(@ApplicationContext c: Context) = SettingsRepository(c)
+    @Provides @Singleton fun provideBilling(@ApplicationContext c: Context, fg: FeatureGate) = BillingManager(c, fg)
+    @Provides @Singleton fun provideDisconnectProtection(@ApplicationContext c: Context) = DisconnectProtectionManager(c)
+    @Provides @Singleton fun provideStreamHealth() = StreamHealthMonitor()
+    @Provides @Singleton fun provideGuestMode(@ApplicationContext c: Context) = GuestModeManager(c)
+    @Provides @Singleton fun provideSportsState() = SportsStateManager()
 }

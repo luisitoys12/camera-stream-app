@@ -6,7 +6,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -74,12 +77,10 @@ class OverlayRepository @Inject constructor(
     }
 
     private fun persistAsync() {
-        kotlinx.coroutines.GlobalScope.run {
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                val snapshots = _activeOverlays.value.map { it.toSnapshot() }
-                context.overlayDataStore.edit { prefs ->
-                    prefs[OVERLAYS_KEY] = Json.encodeToString(snapshots)
-                }
+        CoroutineScope(Dispatchers.IO).launch {
+            val snapshots = _activeOverlays.value.map { it.toSnapshot() }
+            context.overlayDataStore.edit { prefs ->
+                prefs[OVERLAYS_KEY] = Json.encodeToString(snapshots)
             }
         }
     }

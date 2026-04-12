@@ -11,7 +11,7 @@ import tech.estacionkus.camerastream.data.media.MediaAssetType
 import tech.estacionkus.camerastream.data.overlay.ActiveOverlay
 import tech.estacionkus.camerastream.data.overlay.OverlayPosition
 import tech.estacionkus.camerastream.ui.screens.media.VideoPreview
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 /**

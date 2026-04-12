@@ -65,7 +65,7 @@ class ChatManager @Inject constructor() {
             val msg = ChatMessage(
                 id = UUID.randomUUID().toString(),
                 author = displayName,
-                message = msgMatch.trim(),
+                content = msgMatch.trim(),
                 platform = Platform.TWITCH,
                 authorColor = colorMatch.ifBlank { "#9B59B6" }
             )

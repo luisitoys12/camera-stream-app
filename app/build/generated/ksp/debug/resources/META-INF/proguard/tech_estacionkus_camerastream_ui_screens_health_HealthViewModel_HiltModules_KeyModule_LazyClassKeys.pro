@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class tech.estacionkus.camerastream.ui.screens.health.HealthViewModel
