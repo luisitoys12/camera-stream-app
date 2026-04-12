@@ -40,6 +40,7 @@ fun StreamScreen(
     var showSettings by remember { mutableStateOf(false) }
     var showChatSetup by remember { mutableStateOf(false) }
     var showScenes by remember { mutableStateOf(false) }
+    var showHealthInfo by remember { mutableStateOf(false) }
 
     // Show error toasts
     LaunchedEffect(uiState.errorMessage) {
@@ -190,7 +191,7 @@ fun StreamScreen(
                             "FAIR" -> Color(0xFFFFC107)
                             else -> Color(0xFFE53935)
                         }
-                        IconButton(onClick = {}) {
+                        IconButton(onClick = { showHealthInfo = !showHealthInfo }) {
                             Icon(Icons.Default.MonitorHeart, "Health", tint = healthColor)
                         }
                     }

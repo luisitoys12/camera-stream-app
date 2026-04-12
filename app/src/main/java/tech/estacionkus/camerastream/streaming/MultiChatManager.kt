@@ -1,7 +1,10 @@
 package tech.estacionkus.camerastream.streaming
 
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import okhttp3.*
 import tech.estacionkus.camerastream.domain.model.ChatMessage
 import tech.estacionkus.camerastream.domain.model.Platform
@@ -11,6 +14,8 @@ import javax.inject.Singleton
 
 @Singleton
 class MultiChatManager @Inject constructor() {
+    private val TAG = "MultiChatManager"
+
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
 
@@ -23,6 +28,15 @@ class MultiChatManager @Inject constructor() {
     private val connections = mutableMapOf<Platform, WebSocket>()
     private val client = OkHttpClient()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val json = Json { ignoreUnknownKeys = true }
+
+    // YouTube API configuration
+    private var youtubeApiKey: String? = null
+    private var youtubePollingJob: Job? = null
+
+    fun setYouTubeApiKey(key: String) {
+        youtubeApiKey = key.ifBlank { null }
+    }
 
     fun connect(platform: Platform, channel: String) {
         when (platform) {
@@ -104,22 +118,137 @@ class MultiChatManager @Inject constructor() {
         })
     }
 
+    /**
+     * Connect to YouTube Live Chat using YouTube Data API v3.
+     * @param liveChatId The YouTube live chat ID or video ID to poll messages from.
+     */
     private fun connectYouTube(liveChatId: String) {
-        // YouTube Live Chat requires API key and polling (not WebSocket)
-        // Implement polling-based chat reader
+        val apiKey = youtubeApiKey
+        if (apiKey.isNullOrBlank()) {
+            Log.w(TAG, "YouTube API key not configured. YouTube chat requires a YouTube Data API v3 key.")
+            addMsg(ChatMessage(
+                id = UUID.randomUUID().toString(),
+                author = "System",
+                content = "YouTube chat requires an API key. Go to Settings > Chat > YouTube API Key to configure it.",
+                platform = Platform.YOUTUBE,
+                authorColor = "#FF0000"
+            ))
+            _connectedPlatforms.value = _connectedPlatforms.value + Platform.YOUTUBE
+            return
+        }
+
         _connectedPlatforms.value = _connectedPlatforms.value + Platform.YOUTUBE
-        scope.launch {
-            // Poll YouTube Live Chat API every 5 seconds
-            // In production, this would use YouTube Data API v3
-            // liveChatMessages.list with liveChatId
+
+        youtubePollingJob?.cancel()
+        youtubePollingJob = scope.launch {
+            var nextPageToken: String? = null
+            var pollingIntervalMs = 5000L
+
             while (isActive) {
                 try {
-                    // Placeholder: Real implementation would poll YouTube API
-                    delay(5000)
-                } catch (_: Exception) {
-                    break
+                    val url = buildString {
+                        append("https://www.googleapis.com/youtube/v3/liveChat/messages")
+                        append("?liveChatId=$liveChatId")
+                        append("&part=snippet,authorDetails")
+                        append("&key=$apiKey")
+                        if (nextPageToken != null) {
+                            append("&pageToken=$nextPageToken")
+                        }
+                    }
+
+                    val request = Request.Builder().url(url).get().build()
+                    val response = client.newCall(request).execute()
+
+                    if (response.isSuccessful) {
+                        val body = response.body?.string()
+                        if (body != null) {
+                            parseYouTubeChatResponse(body)?.let { parsed ->
+                                nextPageToken = parsed.nextPageToken
+                                pollingIntervalMs = parsed.pollingIntervalMillis.coerceAtLeast(2000)
+
+                                parsed.messages.forEach { msg ->
+                                    addMsg(ChatMessage(
+                                        id = msg.id,
+                                        author = msg.author,
+                                        content = msg.content,
+                                        platform = Platform.YOUTUBE,
+                                        authorColor = "#FF0000",
+                                        badges = if (msg.isChatOwner) listOf("owner") else if (msg.isChatModerator) listOf("moderator") else emptyList()
+                                    ))
+                                }
+                            }
+                        }
+                    } else {
+                        Log.w(TAG, "YouTube API error: ${response.code} ${response.message}")
+                        if (response.code == 403 || response.code == 401) {
+                            addMsg(ChatMessage(
+                                id = UUID.randomUUID().toString(),
+                                author = "System",
+                                content = "YouTube API error: ${response.code}. Check your API key and quota.",
+                                platform = Platform.YOUTUBE,
+                                authorColor = "#FF0000"
+                            ))
+                            break
+                        }
+                    }
+                    response.close()
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Log.w(TAG, "YouTube polling error: ${e.message}")
+                }
+                delay(pollingIntervalMs)
+            }
+        }
+    }
+
+    private data class YouTubeChatParsed(
+        val nextPageToken: String?,
+        val pollingIntervalMillis: Long,
+        val messages: List<YouTubeChatMessage>
+    )
+
+    private data class YouTubeChatMessage(
+        val id: String,
+        val author: String,
+        val content: String,
+        val isChatOwner: Boolean,
+        val isChatModerator: Boolean
+    )
+
+    private fun parseYouTubeChatResponse(body: String): YouTubeChatParsed? {
+        return try {
+            // Parse using regex for lightweight extraction without adding a JSON model dependency
+            val nextPageToken = Regex("\"nextPageToken\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1)
+            val pollingInterval = Regex("\"pollingIntervalMillis\"\\s*:\\s*(\\d+)").find(body)?.groupValues?.get(1)?.toLongOrNull() ?: 5000L
+
+            val messages = mutableListOf<YouTubeChatMessage>()
+            // Parse each item in the items array
+            val itemsMatch = Regex("\"items\"\\s*:\\s*\\[([\\s\\S]*?)\\]").find(body)
+            if (itemsMatch != null) {
+                val itemsStr = itemsMatch.groupValues[1]
+                // Split by each message object pattern
+                val idMatches = Regex("\"id\"\\s*:\\s*\"([^\"]+)\"").findAll(itemsStr).toList()
+                val displayNameMatches = Regex("\"displayName\"\\s*:\\s*\"([^\"]+)\"").findAll(itemsStr).toList()
+                val displayMessageMatches = Regex("\"displayMessage\"\\s*:\\s*\"([^\"]+)\"").findAll(itemsStr).toList()
+                val ownerMatches = Regex("\"isChatOwner\"\\s*:\\s*(true|false)").findAll(itemsStr).toList()
+                val modMatches = Regex("\"isChatModerator\"\\s*:\\s*(true|false)").findAll(itemsStr).toList()
+
+                val count = minOf(idMatches.size, displayNameMatches.size, displayMessageMatches.size)
+                for (i in 0 until count) {
+                    messages.add(YouTubeChatMessage(
+                        id = idMatches[i].groupValues[1],
+                        author = displayNameMatches[i].groupValues[1],
+                        content = displayMessageMatches[i].groupValues[1],
+                        isChatOwner = ownerMatches.getOrNull(i)?.groupValues?.get(1) == "true",
+                        isChatModerator = modMatches.getOrNull(i)?.groupValues?.get(1) == "true"
+                    ))
                 }
             }
+
+            YouTubeChatParsed(nextPageToken, pollingInterval, messages)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse YouTube chat response: ${e.message}")
+            null
         }
     }
 
@@ -138,12 +267,18 @@ class MultiChatManager @Inject constructor() {
     }
 
     fun disconnectPlatform(platform: Platform) {
+        if (platform == Platform.YOUTUBE) {
+            youtubePollingJob?.cancel()
+            youtubePollingJob = null
+        }
         connections[platform]?.close(1000, null)
         connections.remove(platform)
         _connectedPlatforms.value = _connectedPlatforms.value - platform
     }
 
     fun disconnectAll() {
+        youtubePollingJob?.cancel()
+        youtubePollingJob = null
         connections.values.forEach { it.close(1000, null) }
         connections.clear()
         _connectedPlatforms.value = emptySet()

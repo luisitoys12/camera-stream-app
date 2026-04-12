@@ -171,7 +171,7 @@ class MyStudioViewModel @Inject constructor(
     fun togglePreviewPanel() = _uiState.update { it.copy(showPreviewPanel = !it.showPreviewPanel) }
 
     private fun defaultTextForType(type: OverlayType): String = when (type) {
-        OverlayType.TEXT -> "Sample Text"
+        OverlayType.TEXT -> "Your Text Here"
         OverlayType.TICKER -> "Breaking news ticker text here..."
         OverlayType.TIMER -> "00:00"
         OverlayType.QR_CODE -> "https://example.com"
@@ -273,7 +273,7 @@ fun MyStudioScreen(
 
             // Overlay list
             if (state.overlays.isEmpty()) {
-                EmptyOverlayPlaceholder(modifier = Modifier.weight(1f))
+                EmptyOverlayState(modifier = Modifier.weight(1f), onAddOverlay = { viewModel.toggleAddOverlaySheet(true) })
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -395,10 +395,10 @@ private fun OverlayPreviewPanel(
                     .border(1.dp, Color(0xFF2A2A3A), RoundedCornerShape(8.dp))
                     .drawBehind { drawCameraGrid() }
             ) {
-                // Camera icon placeholder
+                // Camera preview background
                 Icon(
                     Icons.Default.Videocam,
-                    contentDescription = null,
+                    contentDescription = "Camera preview area",
                     tint = Color(0xFF222244),
                     modifier = Modifier
                         .size(40.dp)
@@ -1147,7 +1147,7 @@ private fun PresetDialog(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun EmptyOverlayPlaceholder(modifier: Modifier = Modifier) {
+private fun EmptyOverlayState(modifier: Modifier = Modifier, onAddOverlay: () -> Unit = {}) {
     Box(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
@@ -1177,11 +1177,21 @@ private fun EmptyOverlayPlaceholder(modifier: Modifier = Modifier) {
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                "Tap the + button to add text, images, scoreboards, chat widgets and more",
+                "Add text, images, scoreboards, chat widgets and more to your stream",
                 style = MaterialTheme.typography.bodySmall,
                 color = OnSurfaceMuted,
                 textAlign = TextAlign.Center
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = onAddOverlay,
+                colors = ButtonDefaults.buttonColors(containerColor = CameraRed),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Add Overlay", fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

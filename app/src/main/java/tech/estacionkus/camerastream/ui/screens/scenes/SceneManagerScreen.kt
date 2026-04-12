@@ -486,9 +486,24 @@ private fun SceneCard(
     }
 }
 
-// Placeholder — scene cards don't animate but we keep the function for future use
+/**
+ * Returns true while the card is animating a scene transition.
+ * Active cards briefly pulse (scale down then back up) to provide visual feedback.
+ */
 @Composable
-private fun isTransitioning(active: Boolean): Boolean = false
+private fun isTransitioning(active: Boolean): Boolean {
+    var transitioning by remember { mutableStateOf(false) }
+
+    LaunchedEffect(active) {
+        if (active) {
+            transitioning = true
+            kotlinx.coroutines.delay(250)
+            transitioning = false
+        }
+    }
+
+    return transitioning
+}
 
 // ---------------------------------------------------------------------------
 // Scene Overlay Sheet

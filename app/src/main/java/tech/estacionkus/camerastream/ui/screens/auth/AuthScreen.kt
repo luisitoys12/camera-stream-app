@@ -1,5 +1,6 @@
 package tech.estacionkus.camerastream.ui.screens.auth
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -37,6 +39,7 @@ fun AuthScreen(
     var showPassword by remember { mutableStateOf(false) }
     var showForgotPassword by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.isAuthenticated) {
         if (uiState.isAuthenticated) onAuthenticated()
@@ -217,16 +220,23 @@ fun AuthScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Google button
+                    // Google button - Supabase Google OAuth
                     OutlinedButton(
-                        onClick = { /* Google OAuth placeholder */ },
+                        onClick = {
+                            viewModel.signInWithGoogle(context)
+                        },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         border = BorderStroke(1.dp, Color.White.copy(0.3f)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isLoading
                     ) {
-                        Icon(Icons.Default.AccountCircle, null, tint = Color.White)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Continuar con Google", color = Color.White)
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.AccountCircle, null, tint = Color.White)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Continuar con Google", color = Color.White)
+                        }
                     }
                 }
             }

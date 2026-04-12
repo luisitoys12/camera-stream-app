@@ -1,5 +1,9 @@
 package tech.estacionkus.camerastream.ui.screens.auth
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import tech.estacionkus.camerastream.data.auth.AuthRepository
 import tech.estacionkus.camerastream.data.auth.LicenseRepository
+import tech.estacionkus.camerastream.data.auth.Supabase
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -26,6 +31,7 @@ class AuthViewModel @Inject constructor(
     private val licenseRepository: LicenseRepository
 ) : ViewModel() {
 
+    private val TAG = "AuthViewModel"
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
@@ -56,6 +62,34 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Error al crear cuenta")
+        }
+    }
+
+    /**
+     * Initiates Google OAuth flow via Supabase.
+     * Opens browser to Supabase's Google OAuth URL for sign-in.
+     */
+    fun signInWithGoogle(context: Context) {
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        viewModelScope.launch {
+            try {
+                // Build the Supabase Google OAuth URL
+                val supabaseUrl = Supabase.client.supabaseUrl
+                val redirectUrl = "tech.estacionkus.camerastream://auth/callback"
+                val googleOAuthUrl = "${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=$redirectUrl"
+
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(googleOAuthUrl)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            } catch (e: Exception) {
+                Log.e(TAG, "Google OAuth error: ${e.message}")
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = "No se pudo iniciar sesion con Google: ${e.message}"
+                )
+            }
         }
     }
 

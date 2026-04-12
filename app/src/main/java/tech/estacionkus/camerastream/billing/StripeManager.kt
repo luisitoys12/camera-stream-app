@@ -48,11 +48,13 @@ class StripeManager @Inject constructor(
     private val json = Json { ignoreUnknownKeys = true }
 
     companion object {
-        // Placeholder Stripe Checkout URLs - user will configure real ones
-        const val STRIPE_PRO_URL = "https://buy.stripe.com/pro_placeholder"
-        const val STRIPE_AGENCY_URL = "https://buy.stripe.com/agency_placeholder"
         private val KEY_PLAN = stringPreferencesKey("active_plan")
         private val KEY_LICENSE = stringPreferencesKey("license_key")
+        private val KEY_STRIPE_PRO_URL = stringPreferencesKey("stripe_pro_url")
+        private val KEY_STRIPE_AGENCY_URL = stringPreferencesKey("stripe_agency_url")
+        // Default URLs — users must configure their own Stripe Checkout links in Settings
+        private const val DEFAULT_STRIPE_PRO_URL = ""
+        private const val DEFAULT_STRIPE_AGENCY_URL = ""
     }
 
     private val _currentPlan = MutableStateFlow(PlanTier.FREE)
@@ -70,23 +72,46 @@ class StripeManager @Inject constructor(
     private val _licenseKey = MutableStateFlow<String?>(null)
     val licenseKey: StateFlow<String?> = _licenseKey.asStateFlow()
 
+    private val _stripeProUrl = MutableStateFlow(DEFAULT_STRIPE_PRO_URL)
+    val stripeProUrl: StateFlow<String> = _stripeProUrl.asStateFlow()
+
+    private val _stripeAgencyUrl = MutableStateFlow(DEFAULT_STRIPE_AGENCY_URL)
+    val stripeAgencyUrl: StateFlow<String> = _stripeAgencyUrl.asStateFlow()
+
     fun initialize() {
         scope.launch {
             context.planDataStore.data.first().let { prefs ->
                 val planId = prefs[KEY_PLAN] ?: "free"
                 val key = prefs[KEY_LICENSE]
                 _licenseKey.value = key
+                _stripeProUrl.value = prefs[KEY_STRIPE_PRO_URL] ?: DEFAULT_STRIPE_PRO_URL
+                _stripeAgencyUrl.value = prefs[KEY_STRIPE_AGENCY_URL] ?: DEFAULT_STRIPE_AGENCY_URL
                 val tier = PlanTier.entries.find { it.id == planId } ?: PlanTier.FREE
                 updatePlan(tier)
             }
         }
     }
 
+    fun setStripeUrls(proUrl: String, agencyUrl: String) {
+        _stripeProUrl.value = proUrl
+        _stripeAgencyUrl.value = agencyUrl
+        scope.launch {
+            context.planDataStore.edit { prefs ->
+                prefs[KEY_STRIPE_PRO_URL] = proUrl
+                prefs[KEY_STRIPE_AGENCY_URL] = agencyUrl
+            }
+        }
+    }
+
     fun openStripeCheckout(tier: PlanTier) {
         val url = when (tier) {
-            PlanTier.PRO -> STRIPE_PRO_URL
-            PlanTier.AGENCY -> STRIPE_AGENCY_URL
+            PlanTier.PRO -> _stripeProUrl.value
+            PlanTier.AGENCY -> _stripeAgencyUrl.value
             PlanTier.FREE -> return
+        }
+        if (url.isBlank()) {
+            _errorMessage.value = "Stripe checkout URL not configured. Go to Settings to add your Stripe payment link."
+            return
         }
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {

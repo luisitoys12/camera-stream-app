@@ -128,7 +128,12 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.google.accompanist:accompanist-permissions:0.37.0")
 
-    // Browser for Stripe checkout
+    // Media3 / ExoPlayer for video preview
+    implementation("androidx.media3:media3-exoplayer:1.6.0")
+    implementation("androidx.media3:media3-ui:1.6.0")
+    implementation("androidx.media3:media3-exoplayer-rtsp:1.6.0")
+
+    // Browser for Stripe checkout & OAuth
     implementation("androidx.browser:browser:1.8.0")
 
     // Compose animation

@@ -74,8 +74,47 @@ class SrtServerViewModel @Inject constructor(
 
     fun stopTunnel() = cloudflared.stopTunnel()
 
+    private var callerManager: tech.estacionkus.camerastream.streaming.SrtCallerManager? = null
+
     fun connectToRelay(url: String) {
-        // Placeholder for SRT caller connection to relay
+        if (url.isBlank()) return
+        // Parse SRT URL: srt://host:port?streamid=xxx&latency=yyy
+        try {
+            val withoutScheme = url.removePrefix("srt://")
+            val hostPort = withoutScheme.substringBefore("?").substringBefore("/")
+            val host = hostPort.substringBefore(":")
+            val port = hostPort.substringAfter(":").toIntOrNull() ?: 9999
+            val queryString = if (url.contains("?")) url.substringAfter("?") else ""
+            val params = queryString.split("&").associate {
+                val parts = it.split("=", limit = 2)
+                parts.getOrElse(0) { "" } to parts.getOrElse(1) { "" }
+            }
+            val streamId = params["streamid"] ?: params["stream_id"] ?: ""
+            val latency = params["latency"]?.toIntOrNull() ?: 200
+            val passphrase = params["passphrase"] ?: ""
+
+            val config = tech.estacionkus.camerastream.streaming.SrtCallerManager.SrtConfig(
+                host = host,
+                port = port,
+                streamId = streamId,
+                latencyMs = latency,
+                passphrase = passphrase
+            )
+
+            if (callerManager == null) {
+                callerManager = tech.estacionkus.camerastream.streaming.SrtCallerManager()
+            }
+            callerManager?.onTsData = { data, len ->
+                srtServer.onDataReceived?.invoke(data, len)
+            }
+            callerManager?.connect(config)
+        } catch (e: Exception) {
+            android.util.Log.e("SrtServerViewModel", "Failed to connect to relay: ${e.message}")
+        }
+    }
+
+    fun disconnectRelay() {
+        callerManager?.disconnect()
     }
 
     private fun getLocalIp(): String {
