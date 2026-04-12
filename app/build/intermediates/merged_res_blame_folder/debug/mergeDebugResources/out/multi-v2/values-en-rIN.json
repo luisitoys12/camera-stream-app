@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-79:/values-en-rIN/values-en-rIN.xml",
+            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-76:/values-en-rIN/values-en-rIN.xml",
             "map": [
                 {
                     "source": "/home/user/.gradle/caches/8.11.1/transforms/41802fdfcec04dfd1e75f131b0b300b6/transformed/jetified-foundation/res/values-en-rIN/values-en-rIN.xml",

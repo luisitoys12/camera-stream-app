@@ -7,7 +7,7 @@ import dagger.internal.Providers;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import tech.estacionkus.camerastream.billing.BillingManager;
+import tech.estacionkus.camerastream.billing.StripeManager;
 import tech.estacionkus.camerastream.domain.FeatureGate;
 
 @ScopeMetadata
@@ -29,30 +29,30 @@ import tech.estacionkus.camerastream.domain.FeatureGate;
 public final class HomeViewModel_Factory implements Factory<HomeViewModel> {
   private final Provider<FeatureGate> featureGateProvider;
 
-  private final Provider<BillingManager> billingManagerProvider;
+  private final Provider<StripeManager> stripeManagerProvider;
 
   public HomeViewModel_Factory(Provider<FeatureGate> featureGateProvider,
-      Provider<BillingManager> billingManagerProvider) {
+      Provider<StripeManager> stripeManagerProvider) {
     this.featureGateProvider = featureGateProvider;
-    this.billingManagerProvider = billingManagerProvider;
+    this.stripeManagerProvider = stripeManagerProvider;
   }
 
   @Override
   public HomeViewModel get() {
-    return newInstance(featureGateProvider.get(), billingManagerProvider.get());
+    return newInstance(featureGateProvider.get(), stripeManagerProvider.get());
   }
 
   public static HomeViewModel_Factory create(javax.inject.Provider<FeatureGate> featureGateProvider,
-      javax.inject.Provider<BillingManager> billingManagerProvider) {
-    return new HomeViewModel_Factory(Providers.asDaggerProvider(featureGateProvider), Providers.asDaggerProvider(billingManagerProvider));
+      javax.inject.Provider<StripeManager> stripeManagerProvider) {
+    return new HomeViewModel_Factory(Providers.asDaggerProvider(featureGateProvider), Providers.asDaggerProvider(stripeManagerProvider));
   }
 
   public static HomeViewModel_Factory create(Provider<FeatureGate> featureGateProvider,
-      Provider<BillingManager> billingManagerProvider) {
-    return new HomeViewModel_Factory(featureGateProvider, billingManagerProvider);
+      Provider<StripeManager> stripeManagerProvider) {
+    return new HomeViewModel_Factory(featureGateProvider, stripeManagerProvider);
   }
 
-  public static HomeViewModel newInstance(FeatureGate featureGate, BillingManager billingManager) {
-    return new HomeViewModel(featureGate, billingManager);
+  public static HomeViewModel newInstance(FeatureGate featureGate, StripeManager stripeManager) {
+    return new HomeViewModel(featureGate, stripeManager);
   }
 }

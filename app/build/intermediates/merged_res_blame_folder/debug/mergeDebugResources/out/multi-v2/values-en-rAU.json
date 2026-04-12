@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-79:/values-en-rAU/values-en-rAU.xml",
+            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-76:/values-en-rAU/values-en-rAU.xml",
             "map": [
                 {
                     "source": "/home/user/.gradle/caches/8.11.1/transforms/c630a292d495af7624659692c4ce4cca/transformed/jetified-ui/res/values-en-rAU/values-en-rAU.xml",

@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-79:/values-v21/values-v21.xml",
+            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-76:/values-v21/values-v21.xml",
             "map": [
                 {
                     "source": "/home/user/.gradle/caches/8.11.1/transforms/f3908e4d4edb30abd554f003ac8dce70/transformed/appcompat-1.7.1/res/values-v21/values-v21.xml",

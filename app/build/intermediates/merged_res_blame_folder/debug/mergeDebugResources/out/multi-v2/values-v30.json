@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-79:/values-v30/values-v30.xml",
+            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-76:/values-v30/values-v30.xml",
             "map": [
                 {
                     "source": "/home/user/.gradle/caches/8.11.1/transforms/9d894e3efbf9d40e3c953931bf46a83c/transformed/jetified-material3/res/values-v30/values-v30.xml",

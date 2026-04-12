@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-79:/values-en-rXC/values-en-rXC.xml",
+            "outputFile": "tech.estacionkus.camerastream.app-mergeDebugResources-76:/values-en-rXC/values-en-rXC.xml",
             "map": [
                 {
                     "source": "/home/user/.gradle/caches/8.11.1/transforms/e7f5b0c591269300e4794097b69ffde7/transformed/core-1.16.0/res/values-en-rXC/values-en-rXC.xml",

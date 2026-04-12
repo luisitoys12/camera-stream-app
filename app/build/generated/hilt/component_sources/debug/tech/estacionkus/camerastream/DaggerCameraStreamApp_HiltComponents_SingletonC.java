@@ -32,18 +32,19 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.Generated;
-import tech.estacionkus.camerastream.billing.BillingManager;
+import tech.estacionkus.camerastream.billing.StripeManager;
 import tech.estacionkus.camerastream.data.auth.AuthRepository;
 import tech.estacionkus.camerastream.data.auth.LicenseRepository;
 import tech.estacionkus.camerastream.data.media.MediaRepository;
 import tech.estacionkus.camerastream.data.overlay.OverlayRepository;
 import tech.estacionkus.camerastream.data.settings.SettingsRepository;
-import tech.estacionkus.camerastream.di.AppModule_ProvideBillingFactory;
+import tech.estacionkus.camerastream.di.AppModule_ProvideAuthRepositoryFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideChatManagerFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideCloudflaredFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideDisconnectProtectionFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideFeatureGateFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideGuestModeFactory;
+import tech.estacionkus.camerastream.di.AppModule_ProvideLicenseRepositoryFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideMultiChatFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideMultiStreamFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideRecordingManagerFactory;
@@ -53,6 +54,7 @@ import tech.estacionkus.camerastream.di.AppModule_ProvideSettingsRepoFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideSportsStateFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideSrtServerFactory;
 import tech.estacionkus.camerastream.di.AppModule_ProvideStreamHealthFactory;
+import tech.estacionkus.camerastream.di.AppModule_ProvideStripeManagerFactory;
 import tech.estacionkus.camerastream.domain.FeatureGate;
 import tech.estacionkus.camerastream.domain.SceneManager;
 import tech.estacionkus.camerastream.streaming.ChatManager;
@@ -74,6 +76,10 @@ import tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel;
 import tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
 import tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import tech.estacionkus.camerastream.ui.screens.filters.CameraFiltersViewModel;
+import tech.estacionkus.camerastream.ui.screens.filters.CameraFiltersViewModel_HiltModules;
+import tech.estacionkus.camerastream.ui.screens.filters.CameraFiltersViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import tech.estacionkus.camerastream.ui.screens.filters.CameraFiltersViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import tech.estacionkus.camerastream.ui.screens.guest.GuestViewModel;
 import tech.estacionkus.camerastream.ui.screens.guest.GuestViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.guest.GuestViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
@@ -102,6 +108,10 @@ import tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel;
 import tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
 import tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
+import tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastViewModel;
+import tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastViewModel_HiltModules;
+import tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
+import tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastViewModel_HiltModules_KeyModule_Provide_LazyMapKey;
 import tech.estacionkus.camerastream.ui.screens.scenes.ScenesViewModel;
 import tech.estacionkus.camerastream.ui.screens.scenes.ScenesViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.scenes.ScenesViewModel_HiltModules_BindsModule_Binds_LazyMapKey;
@@ -453,7 +463,7 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
 
     @Override
     public Map<Class<?>, Boolean> getViewModelKeys() {
-      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(14).put(AuthViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, AuthViewModel_HiltModules.KeyModule.provide()).put(ChatViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ChatViewModel_HiltModules.KeyModule.provide()).put(GuestViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, GuestViewModel_HiltModules.KeyModule.provide()).put(HealthViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HealthViewModel_HiltModules.KeyModule.provide()).put(HomeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HomeViewModel_HiltModules.KeyModule.provide()).put(ManualCameraViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ManualCameraViewModel_HiltModules.KeyModule.provide()).put(MediaLibraryViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, MediaLibraryViewModel_HiltModules.KeyModule.provide()).put(MyStudioViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, MyStudioViewModel_HiltModules.KeyModule.provide()).put(ScenesViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ScenesViewModel_HiltModules.KeyModule.provide()).put(SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SettingsViewModel_HiltModules.KeyModule.provide()).put(SportsModeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SportsModeViewModel_HiltModules.KeyModule.provide()).put(SrtServerViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SrtServerViewModel_HiltModules.KeyModule.provide()).put(StreamViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, StreamViewModel_HiltModules.KeyModule.provide()).put(UpgradeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, UpgradeViewModel_HiltModules.KeyModule.provide()).build());
+      return LazyClassKeyMap.<Boolean>of(MapBuilder.<String, Boolean>newMapBuilder(16).put(AuthViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, AuthViewModel_HiltModules.KeyModule.provide()).put(CameraFiltersViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, CameraFiltersViewModel_HiltModules.KeyModule.provide()).put(ChatViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ChatViewModel_HiltModules.KeyModule.provide()).put(GuestViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, GuestViewModel_HiltModules.KeyModule.provide()).put(HealthViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HealthViewModel_HiltModules.KeyModule.provide()).put(HomeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, HomeViewModel_HiltModules.KeyModule.provide()).put(ManualCameraViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ManualCameraViewModel_HiltModules.KeyModule.provide()).put(MediaLibraryViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, MediaLibraryViewModel_HiltModules.KeyModule.provide()).put(MyStudioViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, MyStudioViewModel_HiltModules.KeyModule.provide()).put(RadioBroadcastViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, RadioBroadcastViewModel_HiltModules.KeyModule.provide()).put(ScenesViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, ScenesViewModel_HiltModules.KeyModule.provide()).put(SettingsViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SettingsViewModel_HiltModules.KeyModule.provide()).put(SportsModeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SportsModeViewModel_HiltModules.KeyModule.provide()).put(SrtServerViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, SrtServerViewModel_HiltModules.KeyModule.provide()).put(StreamViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, StreamViewModel_HiltModules.KeyModule.provide()).put(UpgradeViewModel_HiltModules_KeyModule_Provide_LazyMapKey.lazyClassKeyName, UpgradeViewModel_HiltModules.KeyModule.provide()).build());
     }
 
     @Override
@@ -485,6 +495,8 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
 
     private Provider<AuthViewModel> authViewModelProvider;
 
+    private Provider<CameraFiltersViewModel> cameraFiltersViewModelProvider;
+
     private Provider<ChatViewModel> chatViewModelProvider;
 
     private Provider<GuestViewModel> guestViewModelProvider;
@@ -498,6 +510,8 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
     private Provider<MediaLibraryViewModel> mediaLibraryViewModelProvider;
 
     private Provider<MyStudioViewModel> myStudioViewModelProvider;
+
+    private Provider<RadioBroadcastViewModel> radioBroadcastViewModelProvider;
 
     private Provider<ScenesViewModel> scenesViewModelProvider;
 
@@ -525,24 +539,26 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
     private void initialize(final SavedStateHandle savedStateHandleParam,
         final ViewModelLifecycle viewModelLifecycleParam) {
       this.authViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 0);
-      this.chatViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
-      this.guestViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
-      this.healthViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
-      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
-      this.manualCameraViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
-      this.mediaLibraryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 6);
-      this.myStudioViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 7);
-      this.scenesViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 8);
-      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 9);
-      this.sportsModeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 10);
-      this.srtServerViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 11);
-      this.streamViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 12);
-      this.upgradeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 13);
+      this.cameraFiltersViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 1);
+      this.chatViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 2);
+      this.guestViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 3);
+      this.healthViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 4);
+      this.homeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 5);
+      this.manualCameraViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 6);
+      this.mediaLibraryViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 7);
+      this.myStudioViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 8);
+      this.radioBroadcastViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 9);
+      this.scenesViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 10);
+      this.settingsViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 11);
+      this.sportsModeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 12);
+      this.srtServerViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 13);
+      this.streamViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 14);
+      this.upgradeViewModelProvider = new SwitchingProvider<>(singletonCImpl, activityRetainedCImpl, viewModelCImpl, 15);
     }
 
     @Override
     public Map<Class<?>, javax.inject.Provider<ViewModel>> getHiltViewModelMap() {
-      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(14).put(AuthViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) authViewModelProvider)).put(ChatViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) chatViewModelProvider)).put(GuestViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) guestViewModelProvider)).put(HealthViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) healthViewModelProvider)).put(HomeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) homeViewModelProvider)).put(ManualCameraViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) manualCameraViewModelProvider)).put(MediaLibraryViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) mediaLibraryViewModelProvider)).put(MyStudioViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) myStudioViewModelProvider)).put(ScenesViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) scenesViewModelProvider)).put(SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) settingsViewModelProvider)).put(SportsModeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) sportsModeViewModelProvider)).put(SrtServerViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) srtServerViewModelProvider)).put(StreamViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) streamViewModelProvider)).put(UpgradeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) upgradeViewModelProvider)).build());
+      return LazyClassKeyMap.<javax.inject.Provider<ViewModel>>of(MapBuilder.<String, javax.inject.Provider<ViewModel>>newMapBuilder(16).put(AuthViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) authViewModelProvider)).put(CameraFiltersViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) cameraFiltersViewModelProvider)).put(ChatViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) chatViewModelProvider)).put(GuestViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) guestViewModelProvider)).put(HealthViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) healthViewModelProvider)).put(HomeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) homeViewModelProvider)).put(ManualCameraViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) manualCameraViewModelProvider)).put(MediaLibraryViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) mediaLibraryViewModelProvider)).put(MyStudioViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) myStudioViewModelProvider)).put(RadioBroadcastViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) radioBroadcastViewModelProvider)).put(ScenesViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) scenesViewModelProvider)).put(SettingsViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) settingsViewModelProvider)).put(SportsModeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) sportsModeViewModelProvider)).put(SrtServerViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) srtServerViewModelProvider)).put(StreamViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) streamViewModelProvider)).put(UpgradeViewModel_HiltModules_BindsModule_Binds_LazyMapKey.lazyClassKeyName, ((Provider) upgradeViewModelProvider)).build());
     }
 
     @Override
@@ -572,46 +588,52 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // tech.estacionkus.camerastream.ui.screens.auth.AuthViewModel 
-          return (T) new AuthViewModel(singletonCImpl.authRepositoryProvider.get(), singletonCImpl.licenseRepositoryProvider.get());
+          return (T) new AuthViewModel(singletonCImpl.provideAuthRepositoryProvider.get(), singletonCImpl.provideLicenseRepositoryProvider.get());
 
-          case 1: // tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel 
+          case 1: // tech.estacionkus.camerastream.ui.screens.filters.CameraFiltersViewModel 
+          return (T) new CameraFiltersViewModel(singletonCImpl.provideStripeManagerProvider.get());
+
+          case 2: // tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel 
           return (T) new ChatViewModel(singletonCImpl.provideMultiChatProvider.get(), singletonCImpl.provideFeatureGateProvider.get());
 
-          case 2: // tech.estacionkus.camerastream.ui.screens.guest.GuestViewModel 
+          case 3: // tech.estacionkus.camerastream.ui.screens.guest.GuestViewModel 
           return (T) new GuestViewModel(singletonCImpl.provideGuestModeProvider.get(), singletonCImpl.provideFeatureGateProvider.get());
 
-          case 3: // tech.estacionkus.camerastream.ui.screens.health.HealthViewModel 
+          case 4: // tech.estacionkus.camerastream.ui.screens.health.HealthViewModel 
           return (T) new HealthViewModel(singletonCImpl.provideStreamHealthProvider.get(), singletonCImpl.provideFeatureGateProvider.get());
 
-          case 4: // tech.estacionkus.camerastream.ui.screens.home.HomeViewModel 
-          return (T) new HomeViewModel(singletonCImpl.provideFeatureGateProvider.get(), singletonCImpl.provideBillingProvider.get());
+          case 5: // tech.estacionkus.camerastream.ui.screens.home.HomeViewModel 
+          return (T) new HomeViewModel(singletonCImpl.provideFeatureGateProvider.get(), singletonCImpl.provideStripeManagerProvider.get());
 
-          case 5: // tech.estacionkus.camerastream.ui.screens.pro.ManualCameraViewModel 
+          case 6: // tech.estacionkus.camerastream.ui.screens.pro.ManualCameraViewModel 
           return (T) new ManualCameraViewModel();
 
-          case 6: // tech.estacionkus.camerastream.ui.screens.media.MediaLibraryViewModel 
+          case 7: // tech.estacionkus.camerastream.ui.screens.media.MediaLibraryViewModel 
           return (T) new MediaLibraryViewModel(singletonCImpl.mediaRepositoryProvider.get());
 
-          case 7: // tech.estacionkus.camerastream.ui.screens.studio.MyStudioViewModel 
+          case 8: // tech.estacionkus.camerastream.ui.screens.studio.MyStudioViewModel 
           return (T) new MyStudioViewModel(singletonCImpl.provideSceneManagerProvider.get(), singletonCImpl.overlayRepositoryProvider.get(), singletonCImpl.provideFeatureGateProvider.get());
 
-          case 8: // tech.estacionkus.camerastream.ui.screens.scenes.ScenesViewModel 
+          case 9: // tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastViewModel 
+          return (T) new RadioBroadcastViewModel(singletonCImpl.provideStripeManagerProvider.get());
+
+          case 10: // tech.estacionkus.camerastream.ui.screens.scenes.ScenesViewModel 
           return (T) new ScenesViewModel(singletonCImpl.provideSceneManagerProvider.get(), singletonCImpl.provideFeatureGateProvider.get());
 
-          case 9: // tech.estacionkus.camerastream.ui.screens.settings.SettingsViewModel 
+          case 11: // tech.estacionkus.camerastream.ui.screens.settings.SettingsViewModel 
           return (T) new SettingsViewModel(singletonCImpl.provideSettingsRepoProvider.get());
 
-          case 10: // tech.estacionkus.camerastream.ui.screens.sports.SportsModeViewModel 
+          case 12: // tech.estacionkus.camerastream.ui.screens.sports.SportsModeViewModel 
           return (T) new SportsModeViewModel(singletonCImpl.provideSportsStateProvider.get(), singletonCImpl.provideFeatureGateProvider.get());
 
-          case 11: // tech.estacionkus.camerastream.ui.screens.pro.SrtServerViewModel 
+          case 13: // tech.estacionkus.camerastream.ui.screens.pro.SrtServerViewModel 
           return (T) new SrtServerViewModel(singletonCImpl.provideSrtServerProvider.get(), singletonCImpl.provideCloudflaredProvider.get());
 
-          case 12: // tech.estacionkus.camerastream.ui.screens.stream.StreamViewModel 
-          return (T) new StreamViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.provideRtmpProvider.get(), singletonCImpl.provideMultiStreamProvider.get(), singletonCImpl.provideRecordingManagerProvider.get(), singletonCImpl.provideChatManagerProvider.get(), singletonCImpl.provideSettingsRepoProvider.get(), singletonCImpl.licenseRepositoryProvider.get(), singletonCImpl.provideFeatureGateProvider.get(), singletonCImpl.provideDisconnectProtectionProvider.get(), singletonCImpl.provideStreamHealthProvider.get(), singletonCImpl.provideSceneManagerProvider.get());
+          case 14: // tech.estacionkus.camerastream.ui.screens.stream.StreamViewModel 
+          return (T) new StreamViewModel(ApplicationContextModule_ProvideApplicationFactory.provideApplication(singletonCImpl.applicationContextModule), singletonCImpl.provideRtmpProvider.get(), singletonCImpl.provideMultiStreamProvider.get(), singletonCImpl.provideRecordingManagerProvider.get(), singletonCImpl.provideChatManagerProvider.get(), singletonCImpl.provideSettingsRepoProvider.get(), singletonCImpl.provideLicenseRepositoryProvider.get(), singletonCImpl.provideFeatureGateProvider.get(), singletonCImpl.provideDisconnectProtectionProvider.get(), singletonCImpl.provideStreamHealthProvider.get(), singletonCImpl.provideSceneManagerProvider.get());
 
-          case 13: // tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel 
-          return (T) new UpgradeViewModel(singletonCImpl.provideBillingProvider.get());
+          case 15: // tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel 
+          return (T) new UpgradeViewModel(singletonCImpl.provideStripeManagerProvider.get());
 
           default: throw new AssertionError(id);
         }
@@ -693,19 +715,19 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
 
     private final SingletonCImpl singletonCImpl = this;
 
-    private Provider<AuthRepository> authRepositoryProvider;
+    private Provider<AuthRepository> provideAuthRepositoryProvider;
 
-    private Provider<LicenseRepository> licenseRepositoryProvider;
-
-    private Provider<MultiChatManager> provideMultiChatProvider;
+    private Provider<LicenseRepository> provideLicenseRepositoryProvider;
 
     private Provider<FeatureGate> provideFeatureGateProvider;
+
+    private Provider<StripeManager> provideStripeManagerProvider;
+
+    private Provider<MultiChatManager> provideMultiChatProvider;
 
     private Provider<GuestModeManager> provideGuestModeProvider;
 
     private Provider<StreamHealthMonitor> provideStreamHealthProvider;
-
-    private Provider<BillingManager> provideBillingProvider;
 
     private Provider<MediaRepository> mediaRepositoryProvider;
 
@@ -739,13 +761,13 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
 
     @SuppressWarnings("unchecked")
     private void initialize(final ApplicationContextModule applicationContextModuleParam) {
-      this.authRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<AuthRepository>(singletonCImpl, 0));
-      this.licenseRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<LicenseRepository>(singletonCImpl, 1));
-      this.provideMultiChatProvider = DoubleCheck.provider(new SwitchingProvider<MultiChatManager>(singletonCImpl, 2));
+      this.provideAuthRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<AuthRepository>(singletonCImpl, 0));
+      this.provideLicenseRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<LicenseRepository>(singletonCImpl, 1));
       this.provideFeatureGateProvider = DoubleCheck.provider(new SwitchingProvider<FeatureGate>(singletonCImpl, 3));
-      this.provideGuestModeProvider = DoubleCheck.provider(new SwitchingProvider<GuestModeManager>(singletonCImpl, 4));
-      this.provideStreamHealthProvider = DoubleCheck.provider(new SwitchingProvider<StreamHealthMonitor>(singletonCImpl, 5));
-      this.provideBillingProvider = DoubleCheck.provider(new SwitchingProvider<BillingManager>(singletonCImpl, 6));
+      this.provideStripeManagerProvider = DoubleCheck.provider(new SwitchingProvider<StripeManager>(singletonCImpl, 2));
+      this.provideMultiChatProvider = DoubleCheck.provider(new SwitchingProvider<MultiChatManager>(singletonCImpl, 4));
+      this.provideGuestModeProvider = DoubleCheck.provider(new SwitchingProvider<GuestModeManager>(singletonCImpl, 5));
+      this.provideStreamHealthProvider = DoubleCheck.provider(new SwitchingProvider<StreamHealthMonitor>(singletonCImpl, 6));
       this.mediaRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<MediaRepository>(singletonCImpl, 7));
       this.provideSceneManagerProvider = DoubleCheck.provider(new SwitchingProvider<SceneManager>(singletonCImpl, 8));
       this.overlayRepositoryProvider = DoubleCheck.provider(new SwitchingProvider<OverlayRepository>(singletonCImpl, 9));
@@ -776,7 +798,7 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
     }
 
     @Override
-    public void injectCameraStreamApp(CameraStreamApp cameraStreamApp) {
+    public void injectCameraStreamApp(CameraStreamApp arg0) {
     }
 
     private static final class SwitchingProvider<T> implements Provider<T> {
@@ -794,25 +816,25 @@ public final class DaggerCameraStreamApp_HiltComponents_SingletonC {
       public T get() {
         switch (id) {
           case 0: // tech.estacionkus.camerastream.data.auth.AuthRepository 
-          return (T) new AuthRepository();
+          return (T) AppModule_ProvideAuthRepositoryFactory.provideAuthRepository();
 
           case 1: // tech.estacionkus.camerastream.data.auth.LicenseRepository 
-          return (T) new LicenseRepository(singletonCImpl.authRepositoryProvider.get());
+          return (T) AppModule_ProvideLicenseRepositoryFactory.provideLicenseRepository(singletonCImpl.provideAuthRepositoryProvider.get());
 
-          case 2: // tech.estacionkus.camerastream.streaming.MultiChatManager 
-          return (T) AppModule_ProvideMultiChatFactory.provideMultiChat();
+          case 2: // tech.estacionkus.camerastream.billing.StripeManager 
+          return (T) AppModule_ProvideStripeManagerFactory.provideStripeManager(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.provideFeatureGateProvider.get());
 
           case 3: // tech.estacionkus.camerastream.domain.FeatureGate 
           return (T) AppModule_ProvideFeatureGateFactory.provideFeatureGate();
 
-          case 4: // tech.estacionkus.camerastream.streaming.GuestModeManager 
+          case 4: // tech.estacionkus.camerastream.streaming.MultiChatManager 
+          return (T) AppModule_ProvideMultiChatFactory.provideMultiChat();
+
+          case 5: // tech.estacionkus.camerastream.streaming.GuestModeManager 
           return (T) AppModule_ProvideGuestModeFactory.provideGuestMode(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));
 
-          case 5: // tech.estacionkus.camerastream.streaming.StreamHealthMonitor 
+          case 6: // tech.estacionkus.camerastream.streaming.StreamHealthMonitor 
           return (T) AppModule_ProvideStreamHealthFactory.provideStreamHealth();
-
-          case 6: // tech.estacionkus.camerastream.billing.BillingManager 
-          return (T) AppModule_ProvideBillingFactory.provideBilling(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule), singletonCImpl.provideFeatureGateProvider.get());
 
           case 7: // tech.estacionkus.camerastream.data.media.MediaRepository 
           return (T) new MediaRepository(ApplicationContextModule_ProvideContextFactory.provideContext(singletonCImpl.applicationContextModule));

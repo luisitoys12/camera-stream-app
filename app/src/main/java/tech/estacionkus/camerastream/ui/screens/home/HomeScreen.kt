@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -32,47 +33,74 @@ fun HomeScreen(
     onOpenHealth: () -> Unit = {},
     onOpenGuest: () -> Unit = {},
     onOpenManualCam: () -> Unit = {},
+    onOpenFilters: () -> Unit = {},
+    onOpenRadio: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val planName by viewModel.planName.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text("CameraStream Pro", fontWeight = FontWeight.Bold)
-                        Text(
-                            "$planName Plan",
-                            fontSize = 12.sp,
-                            color = when (planName) {
-                                "Pro" -> Color(0xFFE53935)
-                                "Agency" -> Color(0xFF6A1B9A)
-                                else -> Color.Gray
-                            }
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onUpgrade) {
-                        Icon(Icons.Default.Star, "Upgrade", tint = Color(0xFFFFD700))
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(Icons.Default.Settings, "Settings")
-                    }
-                }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF1A1A2E), Color(0xFF16213E), Color(0xFF0F3460))
+                )
             )
-        }
-    ) { padding ->
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(16.dp))
+
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "CameraStream",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        "Radio Broadcast Beta",
+                        fontSize = 12.sp,
+                        color = Color.White.copy(0.5f)
+                    )
+                }
+                Row {
+                    Surface(
+                        color = when (planName) {
+                            "Pro" -> Color(0xFFE53935).copy(0.2f)
+                            "Agency" -> Color(0xFF6A1B9A).copy(0.2f)
+                            else -> Color.White.copy(0.1f)
+                        },
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            "$planName Plan",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = when (planName) {
+                                "Pro" -> Color(0xFFE53935)
+                                "Agency" -> Color(0xFF6A1B9A)
+                                else -> Color.White.copy(0.7f)
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
 
             // GO LIVE button
             Button(
@@ -88,8 +116,8 @@ fun HomeScreen(
 
             Spacer(Modifier.height(4.dp))
 
-            // Feature grid
-            Text("Stream Tools", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            // Stream Tools
+            Text("Stream Tools", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FeatureCard("My Studio", Icons.Default.Dashboard, Color(0xFF2196F3), Modifier.weight(1f), onOpenStudio)
@@ -104,7 +132,15 @@ fun HomeScreen(
                 FeatureCard("Guests", Icons.Default.Groups, Color(0xFFE91E63), Modifier.weight(1f), onOpenGuest)
             }
 
-            Text("Pro Features", fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
+            // New v3 features
+            Text("New in v3", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF64B5F6), modifier = Modifier.padding(top = 4.dp))
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FeatureCard("Filters", Icons.Default.FilterVintage, Color(0xFFAB47BC), Modifier.weight(1f), onOpenFilters)
+                FeatureCard("Radio", Icons.Default.Radio, Color(0xFFE53935), Modifier.weight(1f), onOpenRadio)
+            }
+
+            Text("Pro Features", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White, modifier = Modifier.padding(top = 4.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FeatureCard("SRT Server", Icons.Default.Wifi, Color(0xFF607D8B), Modifier.weight(1f), onOpenMedia)
@@ -114,11 +150,14 @@ fun HomeScreen(
             OutlinedButton(
                 onClick = onUpgrade,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                border = ButtonDefaults.outlinedButtonBorder(true).copy(
+                    brush = Brush.horizontalGradient(listOf(Color(0xFFE53935), Color(0xFF6A1B9A)))
+                )
             ) {
                 Icon(Icons.Default.Star, null, tint = Color(0xFFFFD700))
                 Spacer(Modifier.width(8.dp))
-                Text("Upgrade Plan")
+                Text("Upgrade Plan", color = Color.White)
             }
 
             Spacer(Modifier.height(16.dp))

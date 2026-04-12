@@ -15,6 +15,7 @@ data class SrtServerUiState(
     val tunnelRunning: Boolean = false,
     val tunnelUrl: String? = null,
     val srtUrl: String? = null,
+    val localSrtUrl: String? = null,
     val tunnelStatus: TunnelStatus = TunnelStatus.IDLE,
     val tunnelStatusMessage: String = "",
     val downloadProgress: Float = 0f,
@@ -39,33 +40,28 @@ class SrtServerViewModel @Inject constructor(
             ) { running, clients, bitrate, tRunning, tUrl ->
                 _ui.value = _ui.value.copy(
                     serverRunning = running, clientCount = clients,
-                    incomingBitrateKbps = bitrate, tunnelRunning = tRunning, tunnelUrl = tUrl
+                    incomingBitrateKbps = bitrate, tunnelRunning = tRunning, tunnelUrl = tUrl,
+                    localSrtUrl = if (running) "srt://${getLocalIp()}:${srtServer.port}" else null
                 )
             }.collect()
         }
         viewModelScope.launch {
-            cloudflared.status.collect { status ->
-                _ui.value = _ui.value.copy(tunnelStatus = status)
-            }
+            cloudflared.status.collect { _ui.value = _ui.value.copy(tunnelStatus = it) }
         }
         viewModelScope.launch {
-            cloudflared.statusMessage.collect { msg ->
-                _ui.value = _ui.value.copy(tunnelStatusMessage = msg)
-            }
+            cloudflared.statusMessage.collect { _ui.value = _ui.value.copy(tunnelStatusMessage = it) }
         }
         viewModelScope.launch {
-            cloudflared.srtUrl.collect { url ->
-                _ui.value = _ui.value.copy(srtUrl = url)
-            }
+            cloudflared.srtUrl.collect { _ui.value = _ui.value.copy(srtUrl = it) }
         }
         viewModelScope.launch {
-            cloudflared.downloadProgress.collect { progress ->
-                _ui.value = _ui.value.copy(downloadProgress = progress)
-            }
+            cloudflared.downloadProgress.collect { _ui.value = _ui.value.copy(downloadProgress = it) }
         }
     }
 
-    fun startServer() = srtServer.start()
+    fun startServer() {
+        srtServer.start()
+    }
 
     fun stopServer() {
         srtServer.stop()
@@ -77,4 +73,19 @@ class SrtServerViewModel @Inject constructor(
     fun startAutoSetup() = cloudflared.startWithSrt(srtServer)
 
     fun stopTunnel() = cloudflared.stopTunnel()
+
+    fun connectToRelay(url: String) {
+        // Placeholder for SRT caller connection to relay
+    }
+
+    private fun getLocalIp(): String {
+        return try {
+            java.net.NetworkInterface.getNetworkInterfaces()?.toList()
+                ?.flatMap { it.inetAddresses.toList() }
+                ?.firstOrNull { !it.isLoopbackAddress && it is java.net.Inet4Address }
+                ?.hostAddress ?: "192.168.x.x"
+        } catch (_: Exception) {
+            "192.168.x.x"
+        }
+    }
 }

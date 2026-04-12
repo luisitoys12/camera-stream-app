@@ -29,6 +29,12 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    init {
+        if (authRepository.isLoggedIn) {
+            _uiState.value = _uiState.value.copy(isAuthenticated = true)
+        }
+    }
+
     fun setEmail(v: String) { _uiState.value = _uiState.value.copy(email = v) }
     fun setPassword(v: String) { _uiState.value = _uiState.value.copy(password = v) }
     fun clearError() { _uiState.value = _uiState.value.copy(error = null) }
@@ -39,7 +45,7 @@ class AuthViewModel @Inject constructor(
             authRepository.signIn(_uiState.value.email, _uiState.value.password)
             _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
         } catch (e: Exception) {
-            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Error al iniciar sesión")
+            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message ?: "Error al iniciar sesion")
         }
     }
 
@@ -53,9 +59,23 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    fun resetPassword(email: String) = viewModelScope.launch {
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        try {
+            authRepository.resetPassword(email)
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                error = null,
+                couponMessage = "Se envio un link de recuperacion a $email"
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(isLoading = false, error = e.message)
+        }
+    }
+
     fun redeemCoupon(code: String) = viewModelScope.launch {
         if (!authRepository.isLoggedIn) {
-            _uiState.value = _uiState.value.copy(couponMessage = "Primero inicia sesión para canjear el cupón")
+            _uiState.value = _uiState.value.copy(couponMessage = "Primero inicia sesion para canjear el cupon")
             return@launch
         }
         _uiState.value = _uiState.value.copy(isLoading = true, couponMessage = null)

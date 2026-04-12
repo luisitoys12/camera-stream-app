@@ -49,6 +49,7 @@ import javax.inject.Singleton;
 import tech.estacionkus.camerastream.di.AppModule;
 import tech.estacionkus.camerastream.ui.screens.auth.AuthViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.chat.ChatViewModel_HiltModules;
+import tech.estacionkus.camerastream.ui.screens.filters.CameraFiltersViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.guest.GuestViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.health.HealthViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.home.HomeViewModel_HiltModules;
@@ -56,6 +57,7 @@ import tech.estacionkus.camerastream.ui.screens.media.MediaLibraryViewModel_Hilt
 import tech.estacionkus.camerastream.ui.screens.pro.ManualCameraViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.pro.SrtServerViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.pro.UpgradeViewModel_HiltModules;
+import tech.estacionkus.camerastream.ui.screens.radio.RadioBroadcastViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.scenes.ScenesViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.settings.SettingsViewModel_HiltModules;
 import tech.estacionkus.camerastream.ui.screens.sports.SportsModeViewModel_HiltModules;
@@ -167,6 +169,7 @@ public final class CameraStreamApp_HiltComponents {
   @Subcomponent(
       modules = {
           AuthViewModel_HiltModules.KeyModule.class,
+          CameraFiltersViewModel_HiltModules.KeyModule.class,
           ActivityCBuilderModule.class,
           ViewModelCBuilderModule.class,
           ChatViewModel_HiltModules.KeyModule.class,
@@ -178,6 +181,7 @@ public final class CameraStreamApp_HiltComponents {
           ManualCameraViewModel_HiltModules.KeyModule.class,
           MediaLibraryViewModel_HiltModules.KeyModule.class,
           MyStudioViewModel_HiltModules.KeyModule.class,
+          RadioBroadcastViewModel_HiltModules.KeyModule.class,
           ScenesViewModel_HiltModules.KeyModule.class,
           SettingsViewModel_HiltModules.KeyModule.class,
           SportsModeViewModel_HiltModules.KeyModule.class,
@@ -220,6 +224,7 @@ public final class CameraStreamApp_HiltComponents {
   @Subcomponent(
       modules = {
           AuthViewModel_HiltModules.BindsModule.class,
+          CameraFiltersViewModel_HiltModules.BindsModule.class,
           ChatViewModel_HiltModules.BindsModule.class,
           GuestViewModel_HiltModules.BindsModule.class,
           HealthViewModel_HiltModules.BindsModule.class,
@@ -228,6 +233,7 @@ public final class CameraStreamApp_HiltComponents {
           ManualCameraViewModel_HiltModules.BindsModule.class,
           MediaLibraryViewModel_HiltModules.BindsModule.class,
           MyStudioViewModel_HiltModules.BindsModule.class,
+          RadioBroadcastViewModel_HiltModules.BindsModule.class,
           ScenesViewModel_HiltModules.BindsModule.class,
           SettingsViewModel_HiltModules.BindsModule.class,
           SportsModeViewModel_HiltModules.BindsModule.class,

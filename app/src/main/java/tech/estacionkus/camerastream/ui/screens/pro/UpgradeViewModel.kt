@@ -1,40 +1,48 @@
 package tech.estacionkus.camerastream.ui.screens.pro
 
-import android.app.Activity
 import androidx.lifecycle.ViewModel
-import com.android.billingclient.api.ProductDetails
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
-import tech.estacionkus.camerastream.billing.BillingManager
 import tech.estacionkus.camerastream.billing.PlanTier
+import tech.estacionkus.camerastream.billing.StripeManager
 import javax.inject.Inject
 
 @HiltViewModel
 class UpgradeViewModel @Inject constructor(
-    private val billingManager: BillingManager
+    private val stripeManager: StripeManager
 ) : ViewModel() {
 
-    val currentPlan: StateFlow<PlanTier> = billingManager.currentPlan
-
-    val productDetails: StateFlow<Map<String, ProductDetails>> = billingManager.productDetails
-
-    val isLoading: StateFlow<Boolean> = billingManager.isLoading
-
-    val errorMessage: StateFlow<String?> = billingManager.errorMessage
+    val currentPlan: StateFlow<PlanTier> = stripeManager.currentPlan
+    val isLoading: StateFlow<Boolean> = stripeManager.isLoading
+    val errorMessage: StateFlow<String?> = stripeManager.errorMessage
+    val successMessage: StateFlow<String?> = stripeManager.successMessage
+    val licenseKey: StateFlow<String?> = stripeManager.licenseKey
 
     init {
-        billingManager.initialize()
+        stripeManager.initialize()
     }
 
-    fun launchPurchase(activity: Activity, tier: PlanTier) {
-        billingManager.launchPurchaseFlow(activity, tier)
+    fun openStripeCheckout(tier: PlanTier) {
+        stripeManager.openStripeCheckout(tier)
     }
 
-    fun restorePurchases() {
-        billingManager.restorePurchases()
+    fun activateLicenseKey(key: String) {
+        stripeManager.activateLicenseKey(key)
+    }
+
+    fun activateCoupon(code: String) {
+        stripeManager.activateCoupon(code)
+    }
+
+    fun deactivatePlan() {
+        stripeManager.deactivatePlan()
     }
 
     fun clearError() {
-        billingManager.clearError()
+        stripeManager.clearError()
+    }
+
+    fun clearSuccess() {
+        stripeManager.clearSuccess()
     }
 }

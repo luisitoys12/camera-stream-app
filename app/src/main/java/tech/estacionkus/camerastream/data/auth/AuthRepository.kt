@@ -2,7 +2,6 @@ package tech.estacionkus.camerastream.data.auth
 
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,6 +25,10 @@ class AuthRepository @Inject constructor() {
             this.email = email
             this.password = password
         }
+    }
+
+    suspend fun resetPassword(email: String) {
+        auth.resetPasswordForEmail(email)
     }
 
     suspend fun signOut() = auth.signOut()

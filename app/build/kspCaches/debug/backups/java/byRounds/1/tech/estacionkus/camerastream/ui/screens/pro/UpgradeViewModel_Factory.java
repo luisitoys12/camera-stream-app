@@ -7,7 +7,7 @@ import dagger.internal.Providers;
 import dagger.internal.QualifierMetadata;
 import dagger.internal.ScopeMetadata;
 import javax.annotation.processing.Generated;
-import tech.estacionkus.camerastream.billing.BillingManager;
+import tech.estacionkus.camerastream.billing.StripeManager;
 
 @ScopeMetadata
 @QualifierMetadata
@@ -26,27 +26,27 @@ import tech.estacionkus.camerastream.billing.BillingManager;
     "nullness:initialization.field.uninitialized"
 })
 public final class UpgradeViewModel_Factory implements Factory<UpgradeViewModel> {
-  private final Provider<BillingManager> billingManagerProvider;
+  private final Provider<StripeManager> stripeManagerProvider;
 
-  public UpgradeViewModel_Factory(Provider<BillingManager> billingManagerProvider) {
-    this.billingManagerProvider = billingManagerProvider;
+  public UpgradeViewModel_Factory(Provider<StripeManager> stripeManagerProvider) {
+    this.stripeManagerProvider = stripeManagerProvider;
   }
 
   @Override
   public UpgradeViewModel get() {
-    return newInstance(billingManagerProvider.get());
+    return newInstance(stripeManagerProvider.get());
   }
 
   public static UpgradeViewModel_Factory create(
-      javax.inject.Provider<BillingManager> billingManagerProvider) {
-    return new UpgradeViewModel_Factory(Providers.asDaggerProvider(billingManagerProvider));
+      javax.inject.Provider<StripeManager> stripeManagerProvider) {
+    return new UpgradeViewModel_Factory(Providers.asDaggerProvider(stripeManagerProvider));
   }
 
-  public static UpgradeViewModel_Factory create(Provider<BillingManager> billingManagerProvider) {
-    return new UpgradeViewModel_Factory(billingManagerProvider);
+  public static UpgradeViewModel_Factory create(Provider<StripeManager> stripeManagerProvider) {
+    return new UpgradeViewModel_Factory(stripeManagerProvider);
   }
 
-  public static UpgradeViewModel newInstance(BillingManager billingManager) {
-    return new UpgradeViewModel(billingManager);
+  public static UpgradeViewModel newInstance(StripeManager stripeManager) {
+    return new UpgradeViewModel(stripeManager);
   }
 }

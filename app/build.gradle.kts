@@ -15,8 +15,8 @@ android {
         applicationId = "tech.estacionkus.camerastream"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "2.0.0"
+        versionCode = 4
+        versionName = "3.0.0-beta"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         resourceConfigurations += listOf("en", "es")
@@ -128,8 +128,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("com.google.accompanist:accompanist-permissions:0.37.0")
 
-    // Google Play Billing
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    // Browser for Stripe checkout
+    implementation("androidx.browser:browser:1.8.0")
 
     // Compose animation
     implementation("androidx.compose.animation:animation")

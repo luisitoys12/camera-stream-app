@@ -2,7 +2,9 @@ package tech.estacionkus.camerastream.ui.screens.pro
 
 import android.content.Intent
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -13,11 +15,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import tech.estacionkus.camerastream.streaming.TunnelStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +30,7 @@ fun SrtServerScreen(
     val ui by viewModel.uiState.collectAsState()
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
+    var customRelayUrl by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -38,38 +41,46 @@ fun SrtServerScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Auto-setup card
+            // Server Control
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1A2A1A)),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Default.AutoAwesome, null, tint = Color(0xFF4CAF50))
-                        Text("Auto-Setup", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Icon(Icons.Default.Wifi, null, tint = Color(0xFF4CAF50))
+                        Text("SRT Server", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     }
                     Text(
-                        "Start SRT server and Cloudflare tunnel automatically. Get a shareable URL in seconds.",
+                        "Start local SRT server for receiving video. Viewers connect directly via LAN or port-forwarded address.",
                         fontSize = 13.sp, color = Color(0xFFBBBBBB)
                     )
                     Button(
-                        onClick = { viewModel.startAutoSetup() },
-                        enabled = !ui.serverRunning && ui.tunnelStatus != TunnelStatus.DOWNLOADING,
+                        onClick = { if (ui.serverRunning) viewModel.stopServer() else viewModel.startServer() },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (ui.serverRunning) Color(0xFFE53935) else Color(0xFF4CAF50)
+                        ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Icon(Icons.Default.RocketLaunch, null)
+                        Icon(
+                            if (ui.serverRunning) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            null
+                        )
                         Spacer(Modifier.width(8.dp))
-                        Text("Start SRT + Tunnel")
+                        Text(if (ui.serverRunning) "Stop SRT Server" else "Start SRT Server")
                     }
                 }
             }
 
-            // Server status
+            // Server Status
             Card(shape = RoundedCornerShape(12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -79,7 +90,8 @@ fun SrtServerScreen(
                     Column {
                         Text(
                             if (ui.serverRunning) "Server Active" else "Server Stopped",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            color = if (ui.serverRunning) Color(0xFF4CAF50) else Color.Gray
                         )
                         Text("Port: ${ui.port}", style = MaterialTheme.typography.bodySmall)
                         if (ui.clientCount > 0) {
@@ -89,102 +101,45 @@ fun SrtServerScreen(
                             Text("Bitrate: ${ui.incomingBitrateKbps} kbps", fontSize = 12.sp)
                         }
                     }
-                    Switch(
-                        checked = ui.serverRunning,
-                        onCheckedChange = { if (it) viewModel.startServer() else viewModel.stopServer() }
+                    Icon(
+                        if (ui.serverRunning) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                        null,
+                        tint = if (ui.serverRunning) Color(0xFF4CAF50) else Color.Gray,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
 
-            // Tunnel status
-            Card(shape = RoundedCornerShape(12.dp)) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text("Cloudflare Tunnel", style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                when (ui.tunnelStatus) {
-                                    TunnelStatus.IDLE -> "Not running"
-                                    TunnelStatus.DOWNLOADING -> "Downloading binary..."
-                                    TunnelStatus.STARTING -> "Starting..."
-                                    TunnelStatus.ACTIVE -> "Active"
-                                    TunnelStatus.ERROR -> "Error"
-                                },
-                                color = when (ui.tunnelStatus) {
-                                    TunnelStatus.ACTIVE -> Color(0xFF4CAF50)
-                                    TunnelStatus.ERROR -> Color.Red
-                                    TunnelStatus.DOWNLOADING, TunnelStatus.STARTING -> Color(0xFFFFC107)
-                                    else -> Color.Gray
-                                },
-                                fontSize = 12.sp
-                            )
-                        }
-                        Switch(
-                            checked = ui.tunnelRunning,
-                            onCheckedChange = { if (it) viewModel.startTunnel() else viewModel.stopTunnel() },
-                            enabled = ui.serverRunning
-                        )
-                    }
-
-                    if (ui.tunnelStatus == TunnelStatus.DOWNLOADING) {
-                        LinearProgressIndicator(
-                            progress = { ui.downloadProgress },
-                            modifier = Modifier.fillMaxWidth(),
-                            color = Color(0xFF4CAF50)
-                        )
-                        Text("${(ui.downloadProgress * 100).toInt()}%", fontSize = 12.sp)
-                    }
-
-                    if (ui.tunnelStatusMessage.isNotBlank()) {
-                        Text(ui.tunnelStatusMessage, fontSize = 12.sp, color = Color(0xFF888888))
-                    }
-                }
-            }
-
-            // Shareable URL
-            if (ui.tunnelUrl != null || ui.srtUrl != null) {
+            // Local URL - always shown when server running
+            if (ui.serverRunning) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A2E)),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Shareable URLs", fontWeight = FontWeight.Bold)
-
-                        if (ui.tunnelUrl != null) {
-                            Text("Tunnel URL:", fontSize = 12.sp, color = Color.Gray)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(ui.tunnelUrl!!, fontSize = 12.sp, modifier = Modifier.weight(1f), color = Color(0xFF64B5F6))
-                                IconButton(onClick = { clipboard.setText(AnnotatedString(ui.tunnelUrl!!)) }) {
-                                    Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
-
-                        if (ui.srtUrl != null) {
-                            Text("SRT URL:", fontSize = 12.sp, color = Color.Gray)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(ui.srtUrl!!, fontSize = 12.sp, modifier = Modifier.weight(1f), color = Color(0xFF81C784))
-                                IconButton(onClick = { clipboard.setText(AnnotatedString(ui.srtUrl!!)) }) {
-                                    Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
-
+                        Text("Local URL (LAN)", fontWeight = FontWeight.Bold, color = Color.White)
+                        val localUrl = ui.localSrtUrl ?: "srt://192.168.x.x:${ui.port}"
+                        Text(
+                            localUrl,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace,
+                            color = Color(0xFF81C784)
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = { clipboard.setText(AnnotatedString(localUrl)) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Copy")
+                            }
                             Button(
                                 onClick = {
-                                    val shareText = buildString {
-                                        append("CameraStream SRT Server\n")
-                                        ui.tunnelUrl?.let { append("Tunnel: $it\n") }
-                                        ui.srtUrl?.let { append("SRT: $it\n") }
-                                    }
                                     val intent = Intent(Intent.ACTION_SEND).apply {
                                         type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, shareText)
+                                        putExtra(Intent.EXTRA_TEXT, "SRT URL: $localUrl")
                                     }
                                     context.startActivity(Intent.createChooser(intent, "Share SRT URL"))
                                 },
@@ -197,14 +152,88 @@ fun SrtServerScreen(
                                 Text("Share")
                             }
                         }
+                    }
+                }
 
-                        Text(
-                            "Use this URL in OBS: Settings > Stream > Custom, then paste the URL",
-                            fontSize = 11.sp, color = Color(0xFF888888)
-                        )
+                // Public URL (tunnel) section
+                if (ui.tunnelUrl != null) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A2E)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Public URL (Tunnel)", fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(
+                                ui.tunnelUrl!!,
+                                fontSize = 14.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = Color(0xFF64B5F6)
+                            )
+                            OutlinedButton(
+                                onClick = { clipboard.setText(AnnotatedString(ui.tunnelUrl!!)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Copy Public URL")
+                            }
+                        }
                     }
                 }
             }
+
+            // Custom SRT Relay option
+            Card(shape = RoundedCornerShape(12.dp)) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Custom SRT Relay", fontWeight = FontWeight.Bold)
+                    Text(
+                        "Connect to your own SRT relay server (e.g., SRT Live Server, Nimble Streamer).",
+                        fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = customRelayUrl,
+                        onValueChange = { customRelayUrl = it },
+                        label = { Text("SRT Relay URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        placeholder = { Text("srt://relay.example.com:9999") }
+                    )
+                    Button(
+                        onClick = { viewModel.connectToRelay(customRelayUrl) },
+                        enabled = customRelayUrl.isNotBlank(),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF607D8B)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Connect to Relay")
+                    }
+                }
+            }
+
+            // Instructions
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("How to connect", fontWeight = FontWeight.Bold)
+                    Text("1. Start the SRT server above", fontSize = 13.sp)
+                    Text("2. On OBS/VLC: Settings > Stream > Custom", fontSize = 13.sp)
+                    Text("3. Paste the Local URL (same network) or Public URL", fontSize = 13.sp)
+                    Text("4. For remote access: set up port forwarding on port ${ui.port}", fontSize = 13.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Tip: For public access without port forwarding, use a Pinggy or ngrok UDP tunnel externally.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }

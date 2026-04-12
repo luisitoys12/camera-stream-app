@@ -6,7 +6,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import tech.estacionkus.camerastream.billing.BillingManager
+import tech.estacionkus.camerastream.billing.StripeManager
+import tech.estacionkus.camerastream.data.auth.AuthRepository
+import tech.estacionkus.camerastream.data.auth.LicenseRepository
 import tech.estacionkus.camerastream.data.settings.SettingsRepository
 import tech.estacionkus.camerastream.domain.FeatureGate
 import tech.estacionkus.camerastream.domain.SceneManager
@@ -29,9 +31,11 @@ object AppModule {
     @Provides @Singleton fun provideRecordingManager(@ApplicationContext c: Context) = RecordingManager(c)
     @Provides @Singleton fun provideAdaptiveBitrate(@ApplicationContext c: Context, rtmp: RtmpStreamManager) = AdaptiveBitrateController(c, rtmp)
     @Provides @Singleton fun provideSettingsRepo(@ApplicationContext c: Context) = SettingsRepository(c)
-    @Provides @Singleton fun provideBilling(@ApplicationContext c: Context, fg: FeatureGate) = BillingManager(c, fg)
+    @Provides @Singleton fun provideStripeManager(@ApplicationContext c: Context, fg: FeatureGate) = StripeManager(c, fg)
     @Provides @Singleton fun provideDisconnectProtection(@ApplicationContext c: Context) = DisconnectProtectionManager(c)
     @Provides @Singleton fun provideStreamHealth() = StreamHealthMonitor()
     @Provides @Singleton fun provideGuestMode(@ApplicationContext c: Context) = GuestModeManager(c)
     @Provides @Singleton fun provideSportsState() = SportsStateManager()
+    @Provides @Singleton fun provideAuthRepository() = AuthRepository()
+    @Provides @Singleton fun provideLicenseRepository(auth: AuthRepository) = LicenseRepository(auth)
 }
